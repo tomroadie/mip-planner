@@ -137,13 +137,19 @@ textarea{min-height:90px;}
 .canva-placeholder{text-align:center;color:var(--text-muted);padding:24px;}
 .canva-placeholder svg{margin:0 auto 10px;display:block;opacity:.35;}
 
-/* ── IMAGE UPLOAD ── */
-.upload-zone{border:1.5px dashed var(--border-med);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
+/* ── MEDIA UPLOAD ── */
+.upload-zone{border:1.5px dashed var(--border-med);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
 .upload-zone:hover{border-color:var(--pink-dark);background:var(--pink-light);}
-.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .upload-zone p{font-size:12px;color:var(--text-muted);}
 .upload-zone b{color:var(--brand);}
-.upload-preview{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:0.5px solid var(--border);}
+.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:12px;}
+.media-thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:0.5px solid var(--border);background:var(--surface);}
+.media-thumb img,.media-thumb video{width:100%;height:100%;object-fit:cover;display:block;}
+.media-thumb .media-remove{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;line-height:1;}
+.media-thumb .media-type-badge{position:absolute;bottom:4px;left:4px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,0.6);color:#fff;letter-spacing:0.03em;}
+.media-count{font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center;}
+.media-order-hint{font-size:11px;color:var(--text-muted);margin-top:4px;text-align:center;font-style:italic;}
 
 /* ── PREVIEW PANEL ── */
 .preview-mockup{background:var(--white);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
@@ -358,12 +364,14 @@ hr{border:none;border-top:0.5px solid var(--border);margin:20px 0;}
 
         <div id="img-panel-upload">
           <div class="upload-zone" id="upload-zone">
-            <input type="file" accept="image/*" onchange="handleBuildUpload(event)">
+            <input type="file" accept="image/*,video/*" multiple onchange="handleBuildUpload(event)" id="media-file-input">
             <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px;display:block;opacity:.4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
             <p><b>Click to upload</b> or drag and drop</p>
-            <p style="margin-top:4px;">PNG, JPG, WEBP up to 10MB</p>
+            <p style="margin-top:4px;">Images (JPG, PNG, WEBP) or Videos (MP4, MOV) — select multiple for carousels</p>
           </div>
-          <img id="upload-preview" class="upload-preview" style="display:none;margin-top:12px;" alt="Preview">
+          <div class="media-grid" id="media-grid"></div>
+          <div class="media-count" id="media-count"></div>
+          <div class="media-order-hint" id="media-order-hint"></div>
         </div>
 
         <div id="img-panel-canva" style="display:none;">
@@ -615,12 +623,16 @@ function postToRow(p) {
     caption_li: p.captions?.li || '',
     canva_url: p.canvaUrl || '',
     use_canva: p.useCanva || false,
-    image: p.image || '',
+    image: p.media?.[0]?.data || p.image || '',  // legacy compat
+    media: p.media || [],
     notes: p.notes || '',
   };
 }
 
 function rowToPost(r) {
+  // migrate legacy single image to media array
+  let media = r.media || [];
+  if (!media.length && r.image) media = [{ type: 'image', data: r.image }];
   return {
     id: r.id,
     date: r.date || '',
@@ -634,6 +646,7 @@ function rowToPost(r) {
     canvaUrl: r.canva_url || '',
     useCanva: r.use_canva || false,
     image: r.image || '',
+    media,
     notes: r.notes || '',
   };
 }
@@ -904,9 +917,18 @@ function statusLabel(s) {
 
 function thumbHTML(post) {
   if (post.useCanva && post.canvaUrl) {
-    return `<div class="post-thumb" style="background:#f0eef0;font-size:9px;color:#888;text-align:center;padding:2px;">Canva</div>`;
+    return `<div class="post-thumb" style="background:#f0eef0;font-size:9px;color:#888;text-align:center;padding:2px;align-items:center;justify-content:center;display:flex;">Canva</div>`;
   }
-  if (post.image) return `<div class="post-thumb"><img src="${post.image}" alt=""></div>`;
+  const first = post.media?.[0];
+  const isCarousel = post.media?.length > 1;
+  if (first?.type === 'video') {
+    return `<div class="post-thumb" style="position:relative;"><video src="${first.data}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></video><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;">▶</span></div>`;
+  }
+  if (first?.data || post.image) {
+    const src = first?.data || post.image;
+    const badge = isCarousel ? `<span style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.55);color:#fff;font-size:8px;font-weight:700;padding:1px 4px;border-radius:4px;">⊞${post.media.length}</span>` : '';
+    return `<div class="post-thumb" style="position:relative;"><img src="${src}" alt="">${badge}</div>`;
+  }
   return `<div class="post-thumb"><span class="post-thumb-placeholder">🏡</span></div>`;
 }
 
@@ -973,6 +995,7 @@ function renderSchedule() {
 function resetBuilder() {
   editingId = null;
   window._uploadedImage = null;
+  window._mediaItems = [];
   window._editCaptions = {ig:'',fb:'',li:''};
   document.getElementById('builder-title').textContent = 'New post';
   document.getElementById('b-date').value = '';
@@ -982,9 +1005,8 @@ function resetBuilder() {
   document.getElementById('b-notes').value = '';
   document.getElementById('b-canva-url').value = '';
   document.getElementById('b-caption').value = '';
-  document.getElementById('upload-preview').src = '';
-  document.getElementById('upload-preview').style.display = 'none';
-  document.getElementById('upload-zone').style.display = 'block';
+  document.getElementById('upload-preview') && (document.getElementById('upload-preview').src = '');
+  renderMediaGrid();
   activeCaptionTab = 'ig';
   switchCaptionTab('ig');
   switchImgTab('upload');
@@ -996,12 +1018,10 @@ function editPost(id) {
   const post = posts.find(p=>p.id===id);
   if (!post) return;
 
-  // Full reset first — clears image, captions, all fields
+  // Full reset first
   window._uploadedImage = null;
+  window._mediaItems = [];
   window._editCaptions = {ig:'',fb:'',li:''};
-  document.getElementById('upload-preview').src = '';
-  document.getElementById('upload-preview').style.display = 'none';
-  document.getElementById('upload-zone').style.display = 'block';
 
   editingId = id;
   document.getElementById('builder-title').textContent = 'Edit post';
@@ -1018,13 +1038,13 @@ function editPost(id) {
   document.getElementById('b-caption').value = caps.ig || '';
   switchCaptionTab('ig');
 
-  // Load image if it exists on the post
-  if (post.image) {
-    window._uploadedImage = post.image;
-    document.getElementById('upload-preview').src = post.image;
-    document.getElementById('upload-preview').style.display = 'block';
-    document.getElementById('upload-zone').style.display = 'none';
+  // Load media array (or legacy single image)
+  if (post.media && post.media.length) {
+    window._mediaItems = JSON.parse(JSON.stringify(post.media));
+  } else if (post.image) {
+    window._mediaItems = [{ type: 'image', data: post.image, name: 'image' }];
   }
+  renderMediaGrid();
 
   switchImgTab(post.useCanva ? 'canva' : 'upload');
   updatePreview();
@@ -1046,7 +1066,8 @@ function getBuilderPost() {
     captions: caps,
     canvaUrl: document.getElementById('b-canva-url').value,
     useCanva: activeImgTab === 'canva',
-    image: window._uploadedImage || (editingId ? posts.find(p=>p.id===editingId)?.image : null),
+    media: window._mediaItems || [],
+    image: (window._mediaItems && window._mediaItems[0]) ? window._mediaItems[0].data : '',
   };
 }
 
@@ -1080,7 +1101,7 @@ async function savePostData(data) {
   renderAll();
 }
 
-function clearBuilder() { window._uploadedImage = null; window._editCaptions = {ig:'',fb:'',li:''}; resetBuilder(); }
+function clearBuilder() { window._uploadedImage = null; window._mediaItems = []; window._editCaptions = {ig:'',fb:'',li:''}; resetBuilder(); }
 
 // ── CAPTION TABS ──
 function switchCaptionTab(tab) {
@@ -1116,17 +1137,74 @@ function switchImgTab(tab) {
 }
 
 function handleBuildUpload(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    window._uploadedImage = ev.target.result;
-    document.getElementById('upload-preview').src = ev.target.result;
-    document.getElementById('upload-preview').style.display = 'block';
-    document.getElementById('upload-zone').style.display = 'none';
-    updatePreview();
-    updateChecklist();
-  };
-  reader.readAsDataURL(file);
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  if (!window._mediaItems) window._mediaItems = [];
+
+  let loaded = 0;
+  files.forEach(file => {
+    const isVideo = file.type.startsWith('video/');
+    const reader = new FileReader();
+    reader.onload = ev => {
+      window._mediaItems.push({ type: isVideo ? 'video' : 'image', data: ev.target.result, name: file.name });
+      loaded++;
+      if (loaded === files.length) {
+        renderMediaGrid();
+        updatePreview();
+        updateChecklist();
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  // reset input so same files can be re-selected
+  e.target.value = '';
+}
+
+function removeMedia(idx) {
+  if (!window._mediaItems) return;
+  window._mediaItems.splice(idx, 1);
+  renderMediaGrid();
+  updatePreview();
+  updateChecklist();
+}
+
+function renderMediaGrid() {
+  const items = window._mediaItems || [];
+  const grid = document.getElementById('media-grid');
+  const count = document.getElementById('media-count');
+  const hint = document.getElementById('media-order-hint');
+  if (!grid) return;
+
+  if (!items.length) {
+    grid.innerHTML = '';
+    count.textContent = '';
+    hint.textContent = '';
+    return;
+  }
+
+  grid.innerHTML = items.map((m, i) => `
+    <div class="media-thumb">
+      ${m.type === 'video'
+        ? `<video src="${m.data}" muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>`
+        : `<img src="${m.data}" alt="Media ${i+1}">`}
+      <button class="media-remove" onclick="removeMedia(${i})" title="Remove">✕</button>
+      <span class="media-type-badge">${m.type === 'video' ? '▶ VIDEO' : `IMG ${i+1}`}</span>
+    </div>
+  `).join('');
+
+  count.textContent = items.length === 1 ? '1 file uploaded' : `${items.length} files — will post as carousel`;
+  hint.textContent = items.length > 1 ? 'Drag to reorder coming soon — arrange files before uploading for now' : '';
+}
+
+function rcSlide(postId, total, dir) {
+  const slides = document.querySelectorAll(`[id^="rcs-${postId}-"]`);
+  let current = 0;
+  slides.forEach((s, i) => { if (s.style.display !== 'none') current = i; });
+  slides[current].style.display = 'none';
+  const next = (current + dir + total) % total;
+  slides[next].style.display = 'block';
+  const counter = document.getElementById(`rcs-count-${postId}`);
+  if (counter) counter.textContent = `${next + 1} / ${total}`;
 }
 
 function openCanvaLink() {
@@ -1143,16 +1221,26 @@ function updatePreview() {
   document.getElementById('pm-date').textContent = date ? formatDate(date) : 'Scheduled date';
 
   const pmImg = document.getElementById('pm-image');
-  if (window._uploadedImage) {
-    pmImg.innerHTML = `<img src="${window._uploadedImage}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+  const items = window._mediaItems || [];
+  if (items.length) {
+    const first = items[0];
+    const isVideo = first.type === 'video';
+    const carouselBadge = items.length > 1
+      ? `<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;">⊞ ${items.length}</div>`
+      : '';
+    pmImg.style.position = 'relative';
+    pmImg.innerHTML = (isVideo
+      ? `<video src="${first.data}" muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>`
+      : `<img src="${first.data}" alt="" style="width:100%;height:100%;object-fit:cover;">`)
+      + carouselBadge;
   } else if (activeImgTab === 'canva') {
     const url = document.getElementById('b-canva-url').value.trim();
     pmImg.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:8px;">
       <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
-      ${url ? '<span style="color:var(--brand);font-weight:600;font-size:11px;">Canva link saved</span><span>Upload JPG to see preview</span>' : '<span>Canva link + upload JPG</span>'}
+      ${url ? '<span style="color:var(--brand);font-weight:600;font-size:11px;">Canva link saved</span><span>Upload file to see preview</span>' : '<span>Canva link + upload file</span>'}
     </div>`;
   } else {
-    pmImg.innerHTML = `<div style="text-align:center;color:var(--text-light);font-size:12px;padding:24px;"><div style="font-size:28px;margin-bottom:6px;">🏡</div>Image preview</div>`;
+    pmImg.innerHTML = `<div style="text-align:center;color:var(--text-light);font-size:12px;padding:24px;"><div style="font-size:28px;margin-bottom:6px;">🏡</div>Image / video preview</div>`;
   }
 }
 
@@ -1160,7 +1248,7 @@ function updateChecklist() {
   const items = [
     { label: 'Date set', ok: !!document.getElementById('b-date')?.value },
     { label: 'Content brief', ok: !!(document.getElementById('b-brief')?.value?.length > 3) },
-    { label: 'Image / Canva link', ok: !!(window._uploadedImage || document.getElementById('b-canva-url')?.value?.includes('canva.com')) },
+    { label: 'Image / video uploaded', ok: !!(window._mediaItems?.length || document.getElementById('b-canva-url')?.value?.includes('canva.com')) },
     { label: 'Caption written', ok: !!(document.getElementById('b-caption')?.value?.length > 10) },
   ];
   document.getElementById('checklist').innerHTML = items.map(i =>
@@ -1246,13 +1334,30 @@ function reviewCardHTML(post) {
   const showBanner = rs === 'approved' ? '' : 'display:none;';
 
   let imgHTML = '';
-  if (post.image) {
-    imgHTML = `<img src="${post.image}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+  const media = post.media || (post.image ? [{ type:'image', data: post.image }] : []);
+  if (media.length === 1) {
+    const m = media[0];
+    imgHTML = m.type === 'video'
+      ? `<video src="${m.data}" controls style="width:100%;height:100%;object-fit:cover;"></video>`
+      : `<img src="${m.data}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+  } else if (media.length > 1) {
+    const slides = media.map((m, i) =>
+      `<div class="rcs-slide" id="rcs-${post.id}-${i}" style="display:${i===0?'block':'none'};width:100%;height:100%;">` +
+      (m.type === 'video'
+        ? `<video src="${m.data}" controls style="width:100%;height:100%;object-fit:cover;"></video>`
+        : `<img src="${m.data}" alt="" style="width:100%;height:100%;object-fit:cover;">`) +
+      `</div>`
+    ).join('');
+    imgHTML = `<div style="position:relative;width:100%;height:100%;">
+      ${slides}
+      <button onclick="rcSlide('${post.id}',${media.length},-1)" style="position:absolute;left:6px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">‹</button>
+      <button onclick="rcSlide('${post.id}',${media.length},1)" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">›</button>
+      <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;" id="rcs-count-${post.id}">1 / ${media.length}</div>
+    </div>`;
   } else if (post.canvaUrl) {
     imgHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--text-muted);font-size:12px;gap:8px;padding:20px;text-align:center;">
       <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
       <span style="font-weight:600;color:var(--brand);">Image coming soon</span>
-      <span style="font-size:11px;">Design in progress on Canva</span>
     </div>`;
   } else {
     imgHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--text-light);font-size:12px;gap:6px;"><span style="font-size:28px;">🏡</span>Image pending</div>`;
@@ -1452,6 +1557,7 @@ function populateClientLink() {
 }
 
 window._editCaptions = {ig:'',fb:'',li:''};
+window._mediaItems = [];
 populateClientLink();
 init();
 </script>
