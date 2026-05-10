@@ -223,6 +223,15 @@ hr{border:none;border-top:0.5px solid var(--border);margin:20px 0;}
 </head>
 <body>
 
+<div id="loading-overlay" style="position:fixed;inset:0;background:var(--brand);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;">
+  <div style="color:#fff;font-size:18px;font-weight:700;letter-spacing:0.06em;">M I <span style="color:var(--pink);font-weight:300;">Properties</span></div>
+  <div style="color:rgba(255,255,255,0.5);font-size:12px;">Loading content studio…</div>
+  <div style="width:200px;height:3px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden;">
+    <div style="width:40%;height:100%;background:var(--pink);border-radius:2px;animation:loadbar 1.2s ease-in-out infinite;"></div>
+  </div>
+</div>
+<style>@keyframes loadbar{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}</style>
+
 <nav>
   <div class="nav-logo">M I<span> Properties</span></div>
   <div class="nav-tabs">
@@ -576,6 +585,94 @@ hr{border:none;border-top:0.5px solid var(--border);margin:20px 0;}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ── SUPABASE CONFIG ──
+const SUPA_URL = 'https://dzndumryhhlcezdhmofk.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6bmR1bXJ5aGhsY2V6ZGhtb2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MTk1MTgsImV4cCI6MjA5Mzk5NTUxOH0.kCeC3TrXURn9Eewum3EbEN_aPXgMQIY0ePJIuCQTC-0';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ── DB HELPERS ──
+function postToRow(p) {
+  return {
+    id: p.id,
+    date: p.date || null,
+    pillar: p.pillar || 'Listing',
+    brief: p.brief || '',
+    status: p.status || 'draft',
+    review_status: p.reviewStatus || 'pending',
+    review_comment: p.reviewComment || '',
+    platforms: p.platforms || ['Instagram','Facebook','LinkedIn'],
+    caption_ig: p.captions?.ig || '',
+    caption_fb: p.captions?.fb || '',
+    caption_li: p.captions?.li || '',
+    canva_url: p.canvaUrl || '',
+    use_canva: p.useCanva || false,
+    image: p.image || '',
+    notes: p.notes || '',
+  };
+}
+
+function rowToPost(r) {
+  return {
+    id: r.id,
+    date: r.date || '',
+    pillar: r.pillar || 'Listing',
+    brief: r.brief || '',
+    status: r.status || 'draft',
+    reviewStatus: r.review_status || 'pending',
+    reviewComment: r.review_comment || '',
+    platforms: r.platforms || ['Instagram','Facebook','LinkedIn'],
+    captions: { ig: r.caption_ig||'', fb: r.caption_fb||'', li: r.caption_li||'' },
+    canvaUrl: r.canva_url || '',
+    useCanva: r.use_canva || false,
+    image: r.image || '',
+    notes: r.notes || '',
+  };
+}
+
+async function dbLoad() {
+  const { data, error } = await db.from('posts').select('*').order('date', { ascending: true });
+  if (error) { console.error('Supabase load error:', error); return null; }
+  return data.map(rowToPost);
+}
+
+async function dbUpsert(post) {
+  const { error } = await db.from('posts').upsert(postToRow(post), { onConflict: 'id' });
+  if (error) console.error('Supabase upsert error:', error);
+}
+
+async function dbDelete(id) {
+  const { error } = await db.from('posts').delete().eq('id', id);
+  if (error) console.error('Supabase delete error:', error);
+}
+
+async function dbSeedIfEmpty() {
+  const { count } = await db.from('posts').select('*', { count: 'exact', head: true });
+  if (count > 0) return false;
+  const rows = SEED.map(s => postToRow({
+    id: genId(),
+    date: s.date, pillar: s.pillar, brief: s.brief, status: s.status,
+    platforms: ['Instagram','Facebook','LinkedIn'],
+    captions: { ig:'', fb:'', li:'' },
+    reviewStatus: 'pending', reviewComment: '',
+    image: '', canvaUrl: '', useCanva: false, notes: '',
+  }));
+  const { error } = await db.from('posts').insert(rows);
+  if (error) console.error('Seed error:', error);
+  return true;
+}
+
+// ── REALTIME ──
+function subscribeRealtime() {
+  db.channel('posts-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, async () => {
+      const fresh = await dbLoad();
+      if (fresh) { posts = fresh; renderAll(); }
+    })
+    .subscribe();
+}
+</script>
 <script>
 // ── STATE ──
 let posts = [];
@@ -635,31 +732,10 @@ const SEED = [
 ];
 
 // ── INIT ──
-function init() {
-  const saved = localStorage.getItem('mi_posts');
+async function init() {
+  showToast('Loading…');
   const savedTags = localStorage.getItem('mi_hashtags');
   const savedSettings = localStorage.getItem('mi_settings');
-
-  if (saved) {
-    posts = JSON.parse(saved);
-  } else {
-    posts = SEED.map(s => ({
-      id: genId(),
-      date: s.date,
-      pillar: s.pillar,
-      brief: s.brief,
-      status: s.status,
-      platforms: ['Instagram','Facebook','LinkedIn'],
-      captions: { ig:'', fb:'', li:'' },
-      reviewStatus: 'pending',
-      reviewComment: '',
-      image: null,
-      canvaUrl: '',
-      useCanva: false,
-      notes: '',
-    }));
-    savePosts();
-  }
 
   window._hashtags = savedTags ? JSON.parse(savedTags) : [...DEFAULT_HASHTAGS];
 
@@ -673,10 +749,21 @@ function init() {
     if (s.ejsPubKey) { try { emailjs.init(s.ejsPubKey); } catch(e){} }
   }
 
+  await dbSeedIfEmpty();
+  const loaded = await dbLoad();
+  if (loaded) {
+    posts = loaded;
+  } else {
+    showToast('Could not connect to database');
+  }
+
+  subscribeRealtime();
   renderAll();
+  document.getElementById('loading-overlay').style.display = 'none';
+  showToast('Connected — ' + posts.length + ' posts loaded');
 }
 
-function savePosts() { localStorage.setItem('mi_posts', JSON.stringify(posts)); }
+function savePosts() { /* no-op: Supabase is source of truth */ }
 function saveSettings() {
   const s = {
     ejsPubKey: document.getElementById('ejs-pubkey').value,
@@ -934,29 +1021,33 @@ function getBuilderPost() {
   };
 }
 
-function saveDraft() {
+async function saveDraft() {
   const data = getBuilderPost();
   data.status = 'draft';
-  savePostData(data);
+  await savePostData(data);
   showToast('Draft saved');
 }
 
-function schedulePost() {
+async function schedulePost() {
   const data = getBuilderPost();
   if (!data.date) { showToast('Please set a date first'); return; }
   data.status = 'scheduled';
-  savePostData(data);
+  await savePostData(data);
   showToast('Post scheduled!');
 }
 
-function savePostData(data) {
+async function savePostData(data) {
   if (editingId) {
     const idx = posts.findIndex(p=>p.id===editingId);
-    if (idx > -1) posts[idx] = { ...posts[idx], ...data };
+    if (idx > -1) {
+      posts[idx] = { ...posts[idx], ...data };
+      await dbUpsert(posts[idx]);
+    }
   } else {
-    posts.push({ id: genId(), reviewStatus: 'pending', reviewComment: '', ...data });
+    const newPost = { id: genId(), reviewStatus: 'pending', reviewComment: '', ...data };
+    posts.push(newPost);
+    await dbUpsert(newPost);
   }
-  savePosts();
   renderAll();
 }
 
@@ -1182,12 +1273,12 @@ function switchReviewTab(postId, tab) {
   });
 }
 
-function setReviewStatus(id, status) {
+async function setReviewStatus(id, status) {
   const post = posts.find(p=>p.id===id); if (!post) return;
   post.reviewStatus = status;
   if (status === 'approved') post.status = 'approved';
   else if (status === 'changes') post.status = 'changes';
-  savePosts();
+  await dbUpsert(post);
   updateStats();
 
   const card = document.getElementById('rcard-'+id);
@@ -1205,13 +1296,13 @@ function setReviewStatus(id, status) {
   document.getElementById('rev-pill-pending').textContent = posts.filter(p=>p.reviewStatus==='pending').length + ' pending';
 }
 
-function setReviewComment(id, val) {
+async function setReviewComment(id, val) {
   const post = posts.find(p=>p.id===id); if (!post) return;
   post.reviewComment = val;
-  savePosts();
+  await dbUpsert(post);
 }
 
-function submitReview() {
+async function submitReview() {
   const changed = posts.filter(p=>p.reviewStatus==='changes');
   const approved = posts.filter(p=>p.reviewStatus==='approved');
   const settings = JSON.parse(localStorage.getItem('mi_settings')||'{}');
@@ -1231,9 +1322,10 @@ function submitReview() {
 
 // ── DELETE / RESCHEDULE ──
 function openDelete(id) { deleteTargetId = id; document.getElementById('delete-modal').classList.add('open'); }
-function confirmDelete() {
+async function confirmDelete() {
   posts = posts.filter(p=>p.id!==deleteTargetId);
-  savePosts(); renderAll();
+  await dbDelete(deleteTargetId);
+  renderAll();
   closeModal('delete-modal');
   showToast('Post deleted');
 }
@@ -1244,14 +1336,19 @@ function openReschedule(id) {
   document.getElementById('reschedule-date').value = post?.date || '';
   document.getElementById('reschedule-modal').classList.add('open');
 }
-function confirmReschedule() {
+async function confirmReschedule() {
   const newDate = document.getElementById('reschedule-date').value;
   const post = posts.find(p=>p.id===rescheduleTargetId);
-  if (post && newDate) { post.date = newDate; savePosts(); renderAll(); showToast('Post rescheduled'); }
+  if (post && newDate) {
+    post.date = newDate;
+    await dbUpsert(post);
+    renderAll();
+    showToast('Post rescheduled');
+  }
   closeModal('reschedule-modal');
 }
 
-function duplicatePost(id) {
+async function duplicatePost(id) {
   const post = posts.find(p=>p.id===id); if (!post) return;
   const copy = JSON.parse(JSON.stringify(post));
   copy.id = genId();
@@ -1259,7 +1356,8 @@ function duplicatePost(id) {
   copy.reviewStatus = 'pending';
   copy.reviewComment = '';
   posts.push(copy);
-  savePosts(); renderAll();
+  await dbUpsert(copy);
+  renderAll();
   showToast('Post duplicated as draft');
 }
 
@@ -1299,9 +1397,12 @@ function exportJSON() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'mi_properties_posts.json'; a.click();
 }
 
-function confirmClearAll() {
+async function confirmClearAll() {
   if (confirm('Delete all posts? This cannot be undone.')) {
-    posts = []; savePosts(); renderAll(); showToast('All posts cleared');
+    await db.from('posts').delete().neq('id','__none__');
+    posts = [];
+    renderAll();
+    showToast('All posts cleared');
   }
 }
 
