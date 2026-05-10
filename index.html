@@ -143,11 +143,16 @@ textarea{min-height:90px;}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .upload-zone p{font-size:12px;color:var(--text-muted);}
 .upload-zone b{color:var(--brand);}
-.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:12px;}
-.media-thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:0.5px solid var(--border);background:var(--surface);}
-.media-thumb img,.media-thumb video{width:100%;height:100%;object-fit:cover;display:block;}
-.media-thumb .media-remove{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;line-height:1;}
+.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:12px;}
+.media-thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:0.5px solid var(--border);background:var(--surface);cursor:grab;user-select:none;transition:transform .15s,box-shadow .15s,opacity .15s;}
+.media-thumb:active{cursor:grabbing;}
+.media-thumb.dragging{opacity:0.35;transform:scale(0.96);}
+.media-thumb.drag-over{box-shadow:0 0 0 2.5px var(--brand),0 4px 16px rgba(50,50,50,0.18);transform:scale(1.04);}
+.media-thumb img,.media-thumb video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
+.media-thumb .media-remove{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.65);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;line-height:1;z-index:2;}
 .media-thumb .media-type-badge{position:absolute;bottom:4px;left:4px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,0.6);color:#fff;letter-spacing:0.03em;}
+.media-thumb .media-order-num{position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.media-thumb .drag-handle{position:absolute;bottom:4px;right:4px;color:rgba(255,255,255,0.7);font-size:13px;pointer-events:none;}
 .media-count{font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center;}
 .media-order-hint{font-size:11px;color:var(--text-muted);margin-top:4px;text-align:center;font-style:italic;}
 
@@ -607,8 +612,36 @@ const SUPA_URL = 'https://dzndumryhhlcezdhmofk.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6bmR1bXJ5aGhsY2V6ZGhtb2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MTk1MTgsImV4cCI6MjA5Mzk5NTUxOH0.kCeC3TrXURn9Eewum3EbEN_aPXgMQIY0ePJIuCQTC-0';
 const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 
+// ── STORAGE UPLOAD ──
+async function uploadMediaToStorage(items) {
+  const uploaded = [];
+  for (const item of items) {
+    // If it's already a URL (previously uploaded), keep as-is
+    if (item.url) { uploaded.push({ type: item.type, url: item.url, name: item.name || '' }); continue; }
+    // Convert base64 to blob
+    const res = await fetch(item.data);
+    const blob = await res.blob();
+    const ext = item.type === 'video' ? 'mp4' : 'jpg';
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { data, error } = await db.storage.from('post-media').upload(filename, blob, {
+      contentType: blob.type,
+      upsert: false,
+    });
+    if (error) { console.error('Storage upload error:', error); continue; }
+    const { data: urlData } = db.storage.from('post-media').getPublicUrl(filename);
+    uploaded.push({ type: item.type, url: urlData.publicUrl, name: item.name || filename });
+  }
+  return uploaded;
+}
+
 // ── DB HELPERS ──
 function postToRow(p) {
+  // Strip any base64 data before saving — only URLs go to DB
+  const cleanMedia = (p.media || []).map(m => ({
+    type: m.type,
+    url: m.url || '',
+    name: m.name || '',
+  }));
   return {
     id: p.id,
     date: p.date || null,
@@ -623,16 +656,20 @@ function postToRow(p) {
     caption_li: p.captions?.li || '',
     canva_url: p.canvaUrl || '',
     use_canva: p.useCanva || false,
-    image: p.media?.[0]?.data || p.image || '',  // legacy compat
-    media: p.media || [],
+    image: cleanMedia[0]?.url || p.image || '',
+    media: cleanMedia,
     notes: p.notes || '',
   };
 }
 
 function rowToPost(r) {
-  // migrate legacy single image to media array
-  let media = r.media || [];
-  if (!media.length && r.image) media = [{ type: 'image', data: r.image }];
+  let media = (r.media || []).map(m => ({
+    type: m.type || 'image',
+    url: m.url || m.data || '',  // legacy base64 compat
+    name: m.name || '',
+  }));
+  // migrate legacy single image string to media array
+  if (!media.length && r.image) media = [{ type: 'image', url: r.image, name: '' }];
   return {
     id: r.id,
     date: r.date || '',
@@ -645,7 +682,7 @@ function rowToPost(r) {
     captions: { ig: r.caption_ig||'', fb: r.caption_fb||'', li: r.caption_li||'' },
     canvaUrl: r.canva_url || '',
     useCanva: r.use_canva || false,
-    image: r.image || '',
+    image: media[0]?.url || r.image || '',
     media,
     notes: r.notes || '',
   };
@@ -922,10 +959,11 @@ function thumbHTML(post) {
   const first = post.media?.[0];
   const isCarousel = post.media?.length > 1;
   if (first?.type === 'video') {
-    return `<div class="post-thumb" style="position:relative;"><video src="${first.data}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></video><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;">▶</span></div>`;
+    const src = first.url || first.data || '';
+    return `<div class="post-thumb" style="position:relative;background:#000;"><video src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></video><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;">▶</span></div>`;
   }
-  if (first?.data || post.image) {
-    const src = first?.data || post.image;
+  if (first?.url || first?.data || post.image) {
+    const src = first?.url || first?.data || post.image;
     const badge = isCarousel ? `<span style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.55);color:#fff;font-size:8px;font-weight:700;padding:1px 4px;border-radius:4px;">⊞${post.media.length}</span>` : '';
     return `<div class="post-thumb" style="position:relative;"><img src="${src}" alt="">${badge}</div>`;
   }
@@ -1087,6 +1125,17 @@ async function schedulePost() {
 }
 
 async function savePostData(data) {
+  showToast('Uploading media…');
+
+  // Upload any new base64 items to Storage, get back URL-only array
+  if (data.media && data.media.length) {
+    const hasNewFiles = data.media.some(m => m.data && !m.url);
+    if (hasNewFiles) {
+      data.media = await uploadMediaToStorage(data.media);
+      data.image = data.media[0]?.url || '';
+    }
+  }
+
   if (editingId) {
     const idx = posts.findIndex(p=>p.id===editingId);
     if (idx > -1) {
@@ -1099,6 +1148,7 @@ async function savePostData(data) {
     await dbUpsert(newPost);
   }
   renderAll();
+  showToast('Post saved!');
 }
 
 function clearBuilder() { window._uploadedImage = null; window._mediaItems = []; window._editCaptions = {ig:'',fb:'',li:''}; resetBuilder(); }
@@ -1146,6 +1196,7 @@ function handleBuildUpload(e) {
     const isVideo = file.type.startsWith('video/');
     const reader = new FileReader();
     reader.onload = ev => {
+      // store base64 as `data` for local preview; `url` will be set after Storage upload
       window._mediaItems.push({ type: isVideo ? 'video' : 'image', data: ev.target.result, name: file.name });
       loaded++;
       if (loaded === files.length) {
@@ -1156,7 +1207,6 @@ function handleBuildUpload(e) {
     };
     reader.readAsDataURL(file);
   });
-  // reset input so same files can be re-selected
   e.target.value = '';
 }
 
@@ -1167,6 +1217,8 @@ function removeMedia(idx) {
   updatePreview();
   updateChecklist();
 }
+
+let _dragSrcIdx = null;
 
 function renderMediaGrid() {
   const items = window._mediaItems || [];
@@ -1182,18 +1234,64 @@ function renderMediaGrid() {
     return;
   }
 
-  grid.innerHTML = items.map((m, i) => `
-    <div class="media-thumb">
-      ${m.type === 'video'
-        ? `<video src="${m.data}" muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>`
-        : `<img src="${m.data}" alt="Media ${i+1}">`}
+  grid.innerHTML = items.map((m, i) => {
+    const src = m.url || m.data || '';
+    const isVideo = m.type === 'video';
+    return `<div class="media-thumb" draggable="true" data-idx="${i}"
+        ondragstart="mediaDragStart(event,${i})"
+        ondragover="mediaDragOver(event,${i})"
+        ondragleave="mediaDragLeave(event)"
+        ondrop="mediaDrop(event,${i})"
+        ondragend="mediaDragEnd(event)">
+      ${isVideo
+        ? `<video src="${src}" muted playsinline></video>`
+        : `<img src="${src}" alt="Slide ${i+1}">`}
+      <div class="media-order-num">${i+1}</div>
       <button class="media-remove" onclick="removeMedia(${i})" title="Remove">✕</button>
-      <span class="media-type-badge">${m.type === 'video' ? '▶ VIDEO' : `IMG ${i+1}`}</span>
-    </div>
-  `).join('');
+      <span class="media-type-badge">${isVideo ? '▶ VIDEO' : 'IMG'}</span>
+      <span class="drag-handle">⠿</span>
+    </div>`;
+  }).join('');
 
-  count.textContent = items.length === 1 ? '1 file uploaded' : `${items.length} files — will post as carousel`;
-  hint.textContent = items.length > 1 ? 'Drag to reorder coming soon — arrange files before uploading for now' : '';
+  count.textContent = items.length === 1
+    ? '1 file — single post'
+    : `${items.length} files — carousel (slide 1 posts first)`;
+  hint.textContent = items.length > 1 ? 'Drag thumbnails to reorder' : '';
+}
+
+function mediaDragStart(e, idx) {
+  _dragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.target.classList.add('dragging'), 0);
+}
+
+function mediaDragOver(e, idx) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.media-thumb').forEach(el => el.classList.remove('drag-over'));
+  if (idx !== _dragSrcIdx) e.currentTarget.classList.add('drag-over');
+}
+
+function mediaDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function mediaDrop(e, targetIdx) {
+  e.preventDefault();
+  if (_dragSrcIdx === null || _dragSrcIdx === targetIdx) return;
+  const items = window._mediaItems;
+  const dragged = items.splice(_dragSrcIdx, 1)[0];
+  items.splice(targetIdx, 0, dragged);
+  _dragSrcIdx = null;
+  renderMediaGrid();
+  updatePreview();
+}
+
+function mediaDragEnd(e) {
+  document.querySelectorAll('.media-thumb').forEach(el => {
+    el.classList.remove('dragging', 'drag-over');
+  });
+  _dragSrcIdx = null;
 }
 
 function rcSlide(postId, total, dir) {
@@ -1224,14 +1322,15 @@ function updatePreview() {
   const items = window._mediaItems || [];
   if (items.length) {
     const first = items[0];
+    const src = first.url || first.data || '';
     const isVideo = first.type === 'video';
     const carouselBadge = items.length > 1
       ? `<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;">⊞ ${items.length}</div>`
       : '';
     pmImg.style.position = 'relative';
     pmImg.innerHTML = (isVideo
-      ? `<video src="${first.data}" muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>`
-      : `<img src="${first.data}" alt="" style="width:100%;height:100%;object-fit:cover;">`)
+      ? `<video src="${src}" muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>`
+      : `<img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;">`)
       + carouselBadge;
   } else if (activeImgTab === 'canva') {
     const url = document.getElementById('b-canva-url').value.trim();
@@ -1334,20 +1433,22 @@ function reviewCardHTML(post) {
   const showBanner = rs === 'approved' ? '' : 'display:none;';
 
   let imgHTML = '';
-  const media = post.media || (post.image ? [{ type:'image', data: post.image }] : []);
+  const media = post.media || (post.image ? [{ type:'image', url: post.image }] : []);
   if (media.length === 1) {
     const m = media[0];
+    const src = m.url || m.data || '';
     imgHTML = m.type === 'video'
-      ? `<video src="${m.data}" controls style="width:100%;height:100%;object-fit:cover;"></video>`
-      : `<img src="${m.data}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+      ? `<video src="${src}" controls style="width:100%;height:100%;object-fit:cover;"></video>`
+      : `<img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
   } else if (media.length > 1) {
-    const slides = media.map((m, i) =>
-      `<div class="rcs-slide" id="rcs-${post.id}-${i}" style="display:${i===0?'block':'none'};width:100%;height:100%;">` +
-      (m.type === 'video'
-        ? `<video src="${m.data}" controls style="width:100%;height:100%;object-fit:cover;"></video>`
-        : `<img src="${m.data}" alt="" style="width:100%;height:100%;object-fit:cover;">`) +
-      `</div>`
-    ).join('');
+    const slides = media.map((m, i) => {
+      const src = m.url || m.data || '';
+      return `<div class="rcs-slide" id="rcs-${post.id}-${i}" style="display:${i===0?'block':'none'};width:100%;height:100%;">` +
+        (m.type === 'video'
+          ? `<video src="${src}" controls style="width:100%;height:100%;object-fit:cover;"></video>`
+          : `<img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;">`) +
+        `</div>`;
+    }).join('');
     imgHTML = `<div style="position:relative;width:100%;height:100%;">
       ${slides}
       <button onclick="rcSlide('${post.id}',${media.length},-1)" style="position:absolute;left:6px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">‹</button>
