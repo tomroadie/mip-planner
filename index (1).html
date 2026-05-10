@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M I Properties — Content Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --brand:#323232;
+  --pink:#e8c6c3;
+  --pink-dark:#c9a09c;
+  --pink-light:#f7edec;
+  --white:#fff;
+  --surface:#f9f6f5;
+  --border:rgba(50,50,50,0.12);
+  --border-med:rgba(50,50,50,0.22);
+  --text:#323232;
+  --text-muted:#888;
+  --text-light:#bbb;
+  --green:#2e7d5e;
+  --green-light:#d6f0e5;
+  --amber:#a05a00;
+  --amber-light:#fff0cc;
+  --red:#b03030;
+  --red-light:#fde8e8;
+  --radius:10px;
+  --radius-lg:14px;
+  --shadow:0 1px 3px rgba(50,50,50,0.08);
+}
+body{font-family:'Montserrat',sans-serif;background:var(--surface);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
+
+/* ── NAV ── */
+nav{background:var(--brand);display:flex;align-items:center;padding:0 28px;height:56px;gap:0;position:sticky;top:0;z-index:100;}
+.nav-logo{color:#fff;font-size:15px;font-weight:700;letter-spacing:0.06em;margin-right:32px;white-space:nowrap;}
+.nav-logo span{color:var(--pink);font-weight:300;}
+.nav-tabs{display:flex;height:100%;gap:0;}
+.nav-tab{color:rgba(255,255,255,0.55);font-size:12px;font-weight:500;letter-spacing:0.04em;padding:0 18px;border:none;background:none;cursor:pointer;height:100%;border-bottom:2px solid transparent;transition:all .15s;font-family:'Montserrat',sans-serif;}
+.nav-tab:hover{color:rgba(255,255,255,0.85);}
+.nav-tab.active{color:#fff;border-bottom-color:var(--pink);}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.mode-badge{font-size:11px;padding:4px 12px;border-radius:20px;font-weight:600;letter-spacing:0.03em;}
+.mode-admin{background:var(--pink);color:var(--brand);}
+.mode-client{background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);}
+.btn-switch{font-size:11px;padding:5px 13px;border-radius:20px;border:1px solid rgba(255,255,255,0.25);background:none;color:rgba(255,255,255,0.7);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:500;}
+.btn-switch:hover{background:rgba(255,255,255,0.1);}
+
+/* ── PAGES ── */
+.page{display:none;padding:28px;max-width:1200px;margin:0 auto;}
+.page.active{display:block;}
+
+/* ── DASHBOARD ── */
+.dash-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:28px;}
+.stat-card{background:var(--white);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+.stat-card .label{font-size:11px;font-weight:600;letter-spacing:0.05em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;}
+.stat-card .value{font-size:26px;font-weight:700;color:var(--brand);}
+.stat-card .sub{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.stat-card.pink{border-left:3px solid var(--pink);}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.section-title{font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-muted);}
+
+/* ── CALENDAR ── */
+.cal-wrap{background:var(--white);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:28px;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.cal-title{font-size:14px;font-weight:700;}
+.cal-nav{display:flex;gap:6px;}
+.cal-nav button{width:28px;height:28px;border:0.5px solid var(--border-med);border-radius:6px;background:none;cursor:pointer;font-size:14px;color:var(--text);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day-label{font-size:10px;font-weight:700;text-align:center;padding:4px 0;color:var(--text-muted);letter-spacing:0.05em;text-transform:uppercase;}
+.cal-cell{min-height:64px;border-radius:6px;padding:4px;background:var(--surface);border:0.5px solid transparent;cursor:default;}
+.cal-cell.has-posts{background:var(--pink-light);border-color:var(--pink);}
+.cal-cell.today{border-color:var(--brand);}
+.cal-cell.other-month{opacity:0.35;}
+.cal-date{font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:2px;}
+.cal-dot{font-size:9px;line-height:1.4;color:var(--brand);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── POST LIST ── */
+.post-list{display:flex;flex-direction:column;gap:8px;}
+.post-row{background:var(--white);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:14px;transition:border-color .15s;}
+.post-row:hover{border-color:var(--border-med);}
+.post-thumb{width:52px;height:52px;border-radius:8px;background:var(--surface);border:0.5px solid var(--border);object-fit:cover;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.post-thumb img{width:100%;height:100%;object-fit:cover;}
+.post-thumb-placeholder{font-size:18px;color:var(--text-light);}
+.post-info{flex:1;min-width:0;}
+.post-date{font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:2px;}
+.post-brief{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.post-platforms{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.post-pillar{flex-shrink:0;}
+.pillar-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:0.03em;}
+.pb-listing{background:var(--pink-light);color:var(--brand);}
+.pb-lifestyle{background:#d6f0e5;color:#0f6e56;}
+.pb-tips{background:#fff0cc;color:#a05a00;}
+.pb-social{background:#fde8e8;color:#b03030;}
+.status-chip{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:0.03em;flex-shrink:0;}
+.sc-draft{background:#f0f0f0;color:#888;}
+.sc-scheduled{background:var(--amber-light);color:var(--amber);}
+.sc-approved{background:var(--green-light);color:var(--green);}
+.sc-changes{background:var(--red-light);color:var(--red);}
+.sc-live{background:var(--brand);color:#fff;}
+.post-actions{display:flex;gap:4px;flex-shrink:0;}
+.icon-btn{width:30px;height:30px;border:0.5px solid var(--border);border-radius:7px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:15px;transition:all .15s;}
+.icon-btn:hover{background:var(--surface);color:var(--text);border-color:var(--border-med);}
+.icon-btn.danger:hover{background:var(--red-light);color:var(--red);border-color:var(--red);}
+
+/* ── BUILDER ── */
+.builder-grid{display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;}
+@media(max-width:900px){.builder-grid{grid-template-columns:1fr;}}
+.card{background:var(--white);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px;margin-bottom:16px;}
+.card-title{font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:0.5px;background:var(--border);}
+label{display:block;font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--text-muted);text-transform:uppercase;margin-bottom:5px;}
+input[type=text],input[type=date],input[type=email],textarea,select{width:100%;font-family:'Montserrat',sans-serif;font-size:13px;border:0.5px solid var(--border-med);border-radius:8px;padding:9px 12px;color:var(--text);background:var(--white);outline:none;transition:border-color .15s;resize:vertical;}
+input:focus,textarea:focus,select:focus{border-color:var(--brand);}
+textarea{min-height:90px;}
+.field{margin-bottom:16px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.char-count{font-size:10px;text-align:right;color:var(--text-muted);margin-top:3px;}
+.char-count.over{color:var(--red);}
+
+.platform-tabs{display:flex;gap:4px;margin-bottom:10px;}
+.ptab{font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;border:0.5px solid var(--border-med);background:none;cursor:pointer;color:var(--text-muted);font-family:'Montserrat',sans-serif;letter-spacing:0.03em;transition:all .15s;}
+.ptab.active{background:var(--brand);color:#fff;border-color:var(--brand);}
+
+.hashtag-lib{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.htag{font-size:11px;padding:3px 9px;border-radius:20px;background:var(--pink-light);color:var(--brand);cursor:pointer;border:0.5px solid var(--pink);font-weight:500;transition:all .15s;}
+.htag:hover{background:var(--pink);color:var(--brand);}
+
+/* ── CANVA EMBED ── */
+.canva-input{display:flex;gap:8px;}
+.canva-input input{flex:1;}
+.canva-input button{flex-shrink:0;}
+.canva-preview{width:100%;aspect-ratio:1;border-radius:10px;border:0.5px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:12px;}
+.canva-preview iframe{width:100%;height:100%;border:none;}
+.canva-placeholder{text-align:center;color:var(--text-muted);padding:24px;}
+.canva-placeholder svg{margin:0 auto 10px;display:block;opacity:.35;}
+
+/* ── IMAGE UPLOAD ── */
+.upload-zone{border:1.5px dashed var(--border-med);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
+.upload-zone:hover{border-color:var(--pink-dark);background:var(--pink-light);}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.upload-zone p{font-size:12px;color:var(--text-muted);}
+.upload-zone b{color:var(--brand);}
+.upload-preview{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:0.5px solid var(--border);}
+
+/* ── PREVIEW PANEL ── */
+.preview-mockup{background:var(--white);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.pm-header{background:var(--surface);padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:0.5px solid var(--border);}
+.pm-avatar{width:28px;height:28px;border-radius:50%;background:var(--pink);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--brand);}
+.pm-handle{font-size:12px;font-weight:700;}
+.pm-subhandle{font-size:10px;color:var(--text-muted);}
+.pm-image{width:100%;aspect-ratio:1;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.pm-image img,.pm-image iframe{width:100%;height:100%;object-fit:cover;border:none;}
+.pm-body{padding:12px 14px;}
+.pm-caption{font-size:12px;line-height:1.6;color:var(--text);word-break:break-word;}
+.pm-date{font-size:10px;color:var(--text-muted);margin-top:8px;font-weight:500;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;padding:9px 18px;border-radius:8px;border:0.5px solid var(--border-med);cursor:pointer;transition:all .15s;}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+.btn-primary:hover{background:#444;}
+.btn-secondary{background:none;color:var(--text);}
+.btn-secondary:hover{background:var(--surface);}
+.btn-pink{background:var(--pink);color:var(--brand);border-color:var(--pink-dark);}
+.btn-pink:hover{background:var(--pink-dark);color:#fff;}
+.btn-danger{background:none;color:var(--red);border-color:var(--red);}
+.btn-danger:hover{background:var(--red-light);}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── REVIEW PAGE (CLIENT) ── */
+.review-header{background:var(--brand);padding:28px 32px;text-align:center;margin:-28px -28px 28px;}
+.review-header h1{color:#fff;font-size:22px;font-weight:700;letter-spacing:0.04em;}
+.review-header p{color:rgba(255,255,255,0.6);font-size:13px;margin-top:4px;}
+.review-progress{background:rgba(255,255,255,0.1);height:4px;border-radius:2px;margin-top:16px;}
+.review-progress-fill{height:100%;background:var(--pink);border-radius:2px;transition:width .4s;}
+
+.review-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.review-card{background:var(--white);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:border-color .2s;}
+.review-card.approved{border-color:#4caf87;border-width:1.5px;}
+.review-card.changes{border-color:#e8a800;border-width:1.5px;}
+.rc-image{width:100%;aspect-ratio:1;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.rc-image img,.rc-image iframe{width:100%;height:100%;object-fit:cover;border:none;}
+.rc-body{padding:16px;}
+.rc-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.rc-caption-wrap{margin-bottom:12px;}
+.rc-platform-tabs{display:flex;gap:4px;margin-bottom:8px;}
+.rc-caption{font-size:12px;line-height:1.6;color:var(--text);background:var(--surface);border-radius:8px;padding:10px 12px;min-height:60px;}
+.rc-actions{display:flex;gap:8px;}
+.rc-btn{flex:1;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;padding:9px;border-radius:8px;border:0.5px solid var(--border-med);cursor:pointer;transition:all .15s;letter-spacing:0.02em;}
+.rc-approve{color:var(--green);}
+.rc-approve:hover,.rc-approve.active{background:var(--green-light);border-color:#4caf87;color:var(--green);}
+.rc-changes{color:var(--amber);}
+.rc-changes:hover,.rc-changes.active{background:var(--amber-light);border-color:#e8a800;color:var(--amber);}
+.rc-comment{margin-top:10px;}
+.rc-comment textarea{width:100%;font-family:'Montserrat',sans-serif;font-size:12px;border:0.5px solid #e8a800;border-radius:8px;padding:8px 12px;background:var(--amber-light);color:var(--text);resize:vertical;min-height:56px;outline:none;}
+.rc-status-banner{margin-top:10px;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;text-align:center;}
+.rsb-approved{background:var(--green-light);color:var(--green);}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.modal h2{font-size:16px;font-weight:700;margin-bottom:16px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+
+/* ── NOTIFY ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--brand);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:300;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* ── MISC ── */
+.empty-state{text-align:center;padding:48px 24px;color:var(--text-muted);}
+.empty-state h3{font-size:15px;font-weight:700;margin-bottom:6px;color:var(--text);}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.filters select{padding:7px 10px;font-family:'Montserrat',sans-serif;font-size:12px;border:0.5px solid var(--border-med);border-radius:8px;background:var(--white);color:var(--text);cursor:pointer;outline:none;}
+hr{border:none;border-top:0.5px solid var(--border);margin:20px 0;}
+.text-muted{color:var(--text-muted);}
+.mt8{margin-top:8px;}
+.info-box{background:var(--pink-light);border:0.5px solid var(--pink);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--brand);line-height:1.6;}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay" style="position:fixed;inset:0;background:var(--brand);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;">
+  <div style="color:#fff;font-size:18px;font-weight:700;letter-spacing:0.06em;">M I <span style="color:var(--pink);font-weight:300;">Properties</span></div>
+  <div style="color:rgba(255,255,255,0.5);font-size:12px;">Loading content studio…</div>
+  <div style="width:200px;height:3px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden;">
+    <div style="width:40%;height:100%;background:var(--pink);border-radius:2px;animation:loadbar 1.2s ease-in-out infinite;"></div>
+  </div>
+</div>
+<style>@keyframes loadbar{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}</style>
+
+<nav>
+  <div class="nav-logo">M I<span> Properties</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="switchPage('builder')">New post</button>
+    <button class="nav-tab" onclick="switchPage('schedule')">Schedule</button>
+    <button class="nav-tab" onclick="switchPage('review')">Client review</button>
+    <button class="nav-tab" onclick="switchPage('settings')">Settings</button>
+  </div>
+  <div class="nav-right">
+    <span class="mode-badge" id="mode-badge">Admin</span>
+    <button class="btn-switch" onclick="toggleClientMode()">Preview as client</button>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="dash-stats">
+    <div class="stat-card pink"><div class="label">Total posts</div><div class="value" id="stat-total">0</div><div class="sub">in plan</div></div>
+    <div class="stat-card"><div class="label">Approved</div><div class="value" id="stat-approved" style="color:var(--green)">0</div><div class="sub">by client</div></div>
+    <div class="stat-card"><div class="label">Needs changes</div><div class="value" id="stat-changes" style="color:var(--amber)">0</div><div class="sub">flagged</div></div>
+    <div class="stat-card"><div class="label">Pending</div><div class="value" id="stat-pending" style="color:var(--text-muted)">0</div><div class="sub">unreviewed</div></div>
+    <div class="stat-card"><div class="label">This week</div><div class="value" id="stat-week">0</div><div class="sub">scheduled</div></div>
+  </div>
+
+  <div class="cal-wrap">
+    <div class="cal-header">
+      <div class="cal-title" id="cal-month-label">May 2026</div>
+      <div class="cal-nav">
+        <button onclick="calPrev()">&#8249;</button>
+        <button onclick="calNext()">&#8250;</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Upcoming posts</div>
+    <button class="btn btn-primary btn-sm" onclick="switchPage('builder')">+ New post</button>
+  </div>
+  <div class="filters">
+    <select onchange="renderDashList()" id="dash-filter-status">
+      <option value="all">All statuses</option>
+      <option value="draft">Draft</option>
+      <option value="scheduled">Scheduled</option>
+      <option value="approved">Approved</option>
+      <option value="changes">Needs changes</option>
+    </select>
+    <select onchange="renderDashList()" id="dash-filter-pillar">
+      <option value="all">All pillars</option>
+      <option value="Listing">Listing</option>
+      <option value="Lifestyle">Lifestyle</option>
+      <option value="Tips">Tips</option>
+      <option value="Social proof">Social proof</option>
+    </select>
+  </div>
+  <div id="dash-post-list" class="post-list"></div>
+</div>
+
+<!-- BUILDER -->
+<div class="page" id="page-builder">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div>
+      <h1 style="font-size:18px;font-weight:700;" id="builder-title">New post</h1>
+      <p class="text-muted" style="font-size:12px;margin-top:2px;">Fill in the details below. All fields are saved automatically.</p>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-secondary" onclick="clearBuilder()">Clear</button>
+      <button class="btn btn-secondary" onclick="saveDraft()">Save draft</button>
+      <button class="btn btn-primary" onclick="schedulePost()">Schedule post</button>
+    </div>
+  </div>
+
+  <div class="builder-grid">
+    <div>
+      <!-- BASIC INFO -->
+      <div class="card">
+        <div class="card-title">Post details</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="b-date">
+          </div>
+          <div class="field">
+            <label>Pillar</label>
+            <select id="b-pillar">
+              <option value="Listing">Listing</option>
+              <option value="Lifestyle">Lifestyle</option>
+              <option value="Tips">Tips</option>
+              <option value="Social proof">Social proof</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Platforms</label>
+            <select id="b-platforms" multiple style="min-height:74px;">
+              <option value="Instagram" selected>Instagram</option>
+              <option value="Facebook" selected>Facebook</option>
+              <option value="LinkedIn" selected>LinkedIn</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="b-status">
+              <option value="draft">Draft</option>
+              <option value="scheduled">Scheduled</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Content brief</label>
+          <input type="text" id="b-brief" placeholder="e.g. New villa listing — lead with pool photo">
+        </div>
+      </div>
+
+      <!-- IMAGE / CANVA -->
+      <div class="card">
+        <div class="card-title">Image</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button class="btn btn-secondary btn-sm" id="img-tab-upload" onclick="switchImgTab('upload')">Upload image</button>
+          <button class="btn btn-secondary btn-sm" id="img-tab-canva" onclick="switchImgTab('canva')">Canva link</button>
+        </div>
+
+        <div id="img-panel-upload">
+          <div class="upload-zone" id="upload-zone">
+            <input type="file" accept="image/*" onchange="handleBuildUpload(event)">
+            <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px;display:block;opacity:.4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <p><b>Click to upload</b> or drag and drop</p>
+            <p style="margin-top:4px;">PNG, JPG, WEBP up to 10MB</p>
+          </div>
+          <img id="upload-preview" class="upload-preview" style="display:none;margin-top:12px;" alt="Preview">
+        </div>
+
+        <div id="img-panel-canva" style="display:none;">
+          <div class="info-box" style="margin-bottom:12px;">
+            In Canva, click <b>Share → Public link</b> (not the edit link). Paste the URL below. Works with published designs.
+          </div>
+          <div class="canva-input">
+            <input type="text" id="b-canva-url" placeholder="https://www.canva.com/design/..." oninput="previewCanva()">
+          </div>
+          <div class="canva-preview" id="canva-preview-box">
+            <div class="canva-placeholder">
+              <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+              <p style="font-size:12px;">Canva preview will appear here</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CAPTIONS -->
+      <div class="card">
+        <div class="card-title">Captions</div>
+        <div class="platform-tabs">
+          <button class="ptab active" id="ctab-ig" onclick="switchCaptionTab('ig')">Instagram</button>
+          <button class="ptab" id="ctab-fb" onclick="switchCaptionTab('fb')">Facebook</button>
+          <button class="ptab" id="ctab-li" onclick="switchCaptionTab('li')">LinkedIn</button>
+        </div>
+        <textarea id="b-caption" placeholder="Write caption here…" oninput="updateCharCount()"></textarea>
+        <div class="char-count" id="char-count">0 / 2200</div>
+
+        <div style="margin-top:14px;">
+          <label>Hashtag library <span style="font-weight:400;text-transform:none;">(click to insert)</span></label>
+          <div class="hashtag-lib" id="hashtag-lib"></div>
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <input type="text" id="new-hashtag" placeholder="#NewHashtag" style="flex:1;" onkeydown="if(event.key==='Enter')addHashtag()">
+            <button class="btn btn-secondary btn-sm" onclick="addHashtag()">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERNAL NOTES -->
+      <div class="card">
+        <div class="card-title">Internal notes</div>
+        <textarea id="b-notes" placeholder="Notes for your team — not visible to client…" style="min-height:70px;"></textarea>
+      </div>
+    </div>
+
+    <!-- PREVIEW PANEL -->
+    <div style="position:sticky;top:76px;">
+      <div class="card-title" style="margin-bottom:10px;">Live preview</div>
+      <div class="preview-mockup">
+        <div class="pm-header">
+          <div class="pm-avatar">MI</div>
+          <div>
+            <div class="pm-handle">mipropertiesportugal</div>
+            <div class="pm-subhandle" id="pm-platform-label">Instagram</div>
+          </div>
+        </div>
+        <div class="pm-image" id="pm-image">
+          <div style="text-align:center;color:var(--text-light);font-size:12px;padding:24px;">
+            <div style="font-size:28px;margin-bottom:6px;">🏡</div>
+            Image preview
+          </div>
+        </div>
+        <div class="pm-body">
+          <div class="pm-caption" id="pm-caption">Caption will appear here…</div>
+          <div class="pm-date" id="pm-date">Scheduled date</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">Post checklist</div>
+        <div id="checklist" style="font-size:12px;line-height:2;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE -->
+<div class="page" id="page-schedule">
+  <div class="section-header">
+    <div class="section-title">All scheduled posts</div>
+    <div class="btn-group">
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export to CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="switchPage('builder')">+ New post</button>
+    </div>
+  </div>
+  <div class="filters">
+    <select onchange="renderSchedule()" id="sched-filter-month">
+      <option value="all">All months</option>
+      <option value="May">May</option>
+      <option value="June">June</option>
+      <option value="July">July</option>
+      <option value="August">August</option>
+    </select>
+    <select onchange="renderSchedule()" id="sched-filter-pillar">
+      <option value="all">All pillars</option>
+      <option value="Listing">Listing</option>
+      <option value="Lifestyle">Lifestyle</option>
+      <option value="Tips">Tips</option>
+      <option value="Social proof">Social proof</option>
+    </select>
+    <select onchange="renderSchedule()" id="sched-filter-status">
+      <option value="all">All statuses</option>
+      <option value="draft">Draft</option>
+      <option value="scheduled">Scheduled</option>
+      <option value="approved">Approved</option>
+      <option value="changes">Needs changes</option>
+    </select>
+  </div>
+  <div id="schedule-list" class="post-list"></div>
+</div>
+
+<!-- REVIEW (client-facing) -->
+<div class="page" id="page-review">
+  <div class="review-header" id="review-header">
+    <h1>Content for your approval</h1>
+    <p>Review each post, approve or request changes, then submit your feedback.</p>
+    <div class="review-progress"><div class="review-progress-fill" id="review-prog-fill" style="width:0%"></div></div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--green-light);color:var(--green);" id="rev-pill-approved">0 approved</span>
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--amber-light);color:var(--amber);" id="rev-pill-changes">0 changes</span>
+      <span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:#f0f0f0;color:#888;" id="rev-pill-pending">0 pending</span>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="submitReview()">Submit review</button>
+  </div>
+
+  <div class="filters">
+    <select onchange="renderReview()" id="rev-filter-month">
+      <option value="all">All months</option>
+      <option value="May">May</option>
+      <option value="June">June</option>
+      <option value="July">July</option>
+    </select>
+    <select onchange="renderReview()" id="rev-filter-status">
+      <option value="all">All statuses</option>
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="changes">Needs changes</option>
+    </select>
+  </div>
+
+  <div class="review-grid" id="review-grid"></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+  <h1 style="font-size:18px;font-weight:700;margin-bottom:6px;">Settings</h1>
+  <p class="text-muted" style="font-size:12px;margin-bottom:24px;">Configure email notifications and preferences.</p>
+
+  <div class="card" style="max-width:560px;">
+    <div class="card-title">Email notifications (via EmailJS)</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.7;">
+      EmailJS lets you send emails directly from this app at no cost (200 emails/month free). <a href="https://www.emailjs.com" target="_blank" style="color:var(--brand);font-weight:600;">Sign up at emailjs.com</a>, create a service and template, then paste the IDs below.
+    </p>
+    <div class="field">
+      <label>EmailJS Public Key</label>
+      <input type="text" id="ejs-pubkey" placeholder="user_xxxxxxxxxxxxxxxxx" oninput="saveSettings()">
+    </div>
+    <div class="field">
+      <label>EmailJS Service ID</label>
+      <input type="text" id="ejs-service" placeholder="service_xxxxxxx" oninput="saveSettings()">
+    </div>
+    <div class="field">
+      <label>EmailJS Template ID</label>
+      <input type="text" id="ejs-template" placeholder="template_xxxxxxx" oninput="saveSettings()">
+    </div>
+    <div class="field">
+      <label>Client email address</label>
+      <input type="email" id="client-email" placeholder="client@example.com" oninput="saveSettings()">
+    </div>
+    <div class="field">
+      <label>Your email (admin)</label>
+      <input type="email" id="admin-email" placeholder="you@miproperties.com" oninput="saveSettings()">
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="testEmail()">Send test email</button>
+  </div>
+
+  <div class="card" style="max-width:560px;margin-top:16px;">
+    <div class="card-title">Client review link</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.7;">
+      Share this link with your client. It opens directly in review-only mode — no admin tabs, no builder, just the approval page.
+    </p>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="client-link-display" readonly style="flex:1;background:var(--surface);color:var(--text-muted);font-size:12px;">
+      <button class="btn btn-pink btn-sm" onclick="copyClientLink()">Copy link</button>
+    </div>
+  </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">All posts are stored in your browser's local storage.</p>
+    <div class="btn-group">
+      <button class="btn btn-secondary btn-sm" onclick="exportJSON()">Export all posts (JSON)</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmClearAll()">Clear all posts</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h2>Delete this post?</h2>
+    <p style="font-size:13px;color:var(--text-muted);line-height:1.6;">This action cannot be undone. The post will be permanently removed from the schedule.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete post</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESCHEDULE MODAL -->
+<div class="modal-overlay" id="reschedule-modal">
+  <div class="modal">
+    <h2>Reschedule post</h2>
+    <div class="field" style="margin-top:14px;">
+      <label>New date</label>
+      <input type="date" id="reschedule-date">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('reschedule-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmReschedule()">Reschedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ── SUPABASE CONFIG ──
+const SUPA_URL = 'https://dzndumryhhlcezdhmofk.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6bmR1bXJ5aGhsY2V6ZGhtb2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MTk1MTgsImV4cCI6MjA5Mzk5NTUxOH0.kCeC3TrXURn9Eewum3EbEN_aPXgMQIY0ePJIuCQTC-0';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ── DB HELPERS ──
+function postToRow(p) {
+  return {
+    id: p.id,
+    date: p.date || null,
+    pillar: p.pillar || 'Listing',
+    brief: p.brief || '',
+    status: p.status || 'draft',
+    review_status: p.reviewStatus || 'pending',
+    review_comment: p.reviewComment || '',
+    platforms: p.platforms || ['Instagram','Facebook','LinkedIn'],
+    caption_ig: p.captions?.ig || '',
+    caption_fb: p.captions?.fb || '',
+    caption_li: p.captions?.li || '',
+    canva_url: p.canvaUrl || '',
+    use_canva: p.useCanva || false,
+    image: p.image || '',
+    notes: p.notes || '',
+  };
+}
+
+function rowToPost(r) {
+  return {
+    id: r.id,
+    date: r.date || '',
+    pillar: r.pillar || 'Listing',
+    brief: r.brief || '',
+    status: r.status || 'draft',
+    reviewStatus: r.review_status || 'pending',
+    reviewComment: r.review_comment || '',
+    platforms: r.platforms || ['Instagram','Facebook','LinkedIn'],
+    captions: { ig: r.caption_ig||'', fb: r.caption_fb||'', li: r.caption_li||'' },
+    canvaUrl: r.canva_url || '',
+    useCanva: r.use_canva || false,
+    image: r.image || '',
+    notes: r.notes || '',
+  };
+}
+
+async function dbLoad() {
+  const { data, error } = await db.from('posts').select('*').order('date', { ascending: true });
+  if (error) { console.error('Supabase load error:', error); return null; }
+  return data.map(rowToPost);
+}
+
+async function dbUpsert(post) {
+  const { error } = await db.from('posts').upsert(postToRow(post), { onConflict: 'id' });
+  if (error) console.error('Supabase upsert error:', error);
+}
+
+async function dbDelete(id) {
+  const { error } = await db.from('posts').delete().eq('id', id);
+  if (error) console.error('Supabase delete error:', error);
+}
+
+async function dbSeedIfEmpty() {
+  const { count } = await db.from('posts').select('*', { count: 'exact', head: true });
+  if (count > 0) return false;
+  const rows = SEED.map(s => postToRow({
+    id: genId(),
+    date: s.date, pillar: s.pillar, brief: s.brief, status: s.status,
+    platforms: ['Instagram','Facebook','LinkedIn'],
+    captions: { ig:'', fb:'', li:'' },
+    reviewStatus: 'pending', reviewComment: '',
+    image: '', canvaUrl: '', useCanva: false, notes: '',
+  }));
+  const { error } = await db.from('posts').insert(rows);
+  if (error) console.error('Seed error:', error);
+  return true;
+}
+
+// ── REALTIME ──
+function subscribeRealtime() {
+  db.channel('posts-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, async () => {
+      const fresh = await dbLoad();
+      if (fresh) { posts = fresh; renderAll(); }
+    })
+    .subscribe();
+}
+</script>
+<script>
+// ── STATE ──
+let posts = [];
+let editingId = null;
+let deleteTargetId = null;
+let rescheduleTargetId = null;
+let activeCaptionTab = 'ig';
+let activeImgTab = 'upload';
+let calYear = 2026, calMonth = 4; // 0-indexed, 4 = May
+const IS_CLIENT_URL = new URLSearchParams(window.location.search).has('client');
+let clientMode = IS_CLIENT_URL;
+
+const CHAR_LIMITS = { ig: 2200, fb: 63206, li: 3000 };
+const PLATFORM_LABELS = { ig: 'Instagram', fb: 'Facebook', li: 'LinkedIn' };
+
+const DEFAULT_HASHTAGS = ['#AlgarveProperty','#BuyInPortugal','#PortugalRealEstate','#AlgarveLife','#MoveToPortugal','#LuxuryAlgarve','#MIProperties','#AlgarveVillas','#PortugalLiving'];
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ── SEED DATA ──
+const SEED = [
+  {date:'2026-05-12',pillar:'Listing',brief:"New listing — agent photo + price. Short punchy caption.",status:'scheduled'},
+  {date:'2026-05-14',pillar:'Lifestyle',brief:"'Why the Algarve?' — golden-hour beach shot.",status:'scheduled'},
+  {date:'2026-05-16',pillar:'Tips',brief:"5 things UK buyers ask before moving to Portugal.",status:'draft'},
+  {date:'2026-05-19',pillar:'Listing',brief:"Feature a listing — pool, terrace, view.",status:'scheduled'},
+  {date:'2026-05-21',pillar:'Social proof',brief:"Client testimonial — screenshot or quote card.",status:'draft'},
+  {date:'2026-05-23',pillar:'Lifestyle',brief:"Local food or market photo.",status:'draft'},
+  {date:'2026-05-26',pillar:'Listing',brief:"Listing — beds, price, location, link in bio.",status:'scheduled'},
+  {date:'2026-05-28',pillar:'Tips',brief:"What is NHR tax status and how does it benefit UK buyers?",status:'draft'},
+  {date:'2026-05-30',pillar:'Lifestyle',brief:"Behind the scenes — Marc on a viewing.",status:'draft'},
+  {date:'2026-06-02',pillar:'Listing',brief:"New listing or price-reduced property.",status:'draft'},
+  {date:'2026-06-04',pillar:'Social proof',brief:"'Sold!' post — happy buyers or the property.",status:'draft'},
+  {date:'2026-06-06',pillar:'Tips',brief:"How long does buying property in Portugal take?",status:'draft'},
+  {date:'2026-06-09',pillar:'Listing',brief:"Summer listing push. Lead with pool or outdoor space.",status:'draft'},
+  {date:'2026-06-11',pillar:'Lifestyle',brief:"Summer in the Algarve — beach, sun, lifestyle.",status:'draft'},
+  {date:'2026-06-13',pillar:'Tips',brief:"Can UK citizens still buy in Portugal post-Brexit?",status:'draft'},
+  {date:'2026-06-16',pillar:'Listing',brief:"Luxury feature — villa, sea views, character property.",status:'draft'},
+  {date:'2026-06-18',pillar:'Social proof',brief:"Testimonial from a UK buyer who relocated.",status:'draft'},
+  {date:'2026-06-20',pillar:'Lifestyle',brief:"Marc's personal touch — why he loves the Algarve.",status:'draft'},
+  {date:'2026-06-23',pillar:'Listing',brief:"Apartment, townhouse — variety from usual villas.",status:'draft'},
+  {date:'2026-06-25',pillar:'Tips',brief:"What areas in the Algarve are best for families?",status:'draft'},
+  {date:'2026-06-27',pillar:'Lifestyle',brief:"End of June — long evenings, terraces, al fresco dining.",status:'draft'},
+  {date:'2026-06-30',pillar:'Social proof',brief:"Half-year milestone — X properties sold.",status:'draft'},
+  {date:'2026-07-02',pillar:'Listing',brief:"New listing — go straight to the best feature photo.",status:'draft'},
+  {date:'2026-07-04',pillar:'Tips',brief:"What are the buying costs in Portugal? IMT, stamp duty, fees.",status:'draft'},
+  {date:'2026-07-07',pillar:'Listing',brief:"July push — peak enquiry season. CTA to enquire.",status:'draft'},
+  {date:'2026-07-09',pillar:'Lifestyle',brief:"Peak summer — clifftops, golden light, turquoise water.",status:'draft'},
+  {date:'2026-07-11',pillar:'Tips',brief:"How to get a mortgage in Portugal as a non-resident.",status:'draft'},
+  {date:'2026-07-14',pillar:'Listing',brief:"Listing at a different price point — different audience.",status:'draft'},
+  {date:'2026-07-16',pillar:'Social proof',brief:"Testimonial: 'We visited in July and made an offer.'",status:'draft'},
+  {date:'2026-07-18',pillar:'Lifestyle',brief:"Local neighbourhood feature — a village Marc loves.",status:'draft'},
+  {date:'2026-07-21',pillar:'Listing',brief:"Premium villa showcase — luxury buyer.",status:'draft'},
+  {date:'2026-07-23',pillar:'Tips',brief:"What to look for on a property viewing in Portugal.",status:'draft'},
+  {date:'2026-07-25',pillar:'Lifestyle',brief:"'Life here really does look like this.' Aspirational.",status:'draft'},
+  {date:'2026-07-28',pillar:'Listing',brief:"Final push. 'Enquiries up this summer — contact us.'",status:'draft'},
+  {date:'2026-07-30',pillar:'Social proof',brief:"3-month wrap-up — properties sold, thank you post.",status:'draft'},
+  {date:'2026-08-01',pillar:'Tips',brief:"What does the Algarve market look like right now?",status:'draft'},
+];
+
+// ── INIT ──
+async function init() {
+  showToast('Loading…');
+  const savedTags = localStorage.getItem('mi_hashtags');
+  const savedSettings = localStorage.getItem('mi_settings');
+
+  window._hashtags = savedTags ? JSON.parse(savedTags) : [...DEFAULT_HASHTAGS];
+
+  if (savedSettings) {
+    const s = JSON.parse(savedSettings);
+    document.getElementById('ejs-pubkey').value = s.ejsPubKey || '';
+    document.getElementById('ejs-service').value = s.ejsService || '';
+    document.getElementById('ejs-template').value = s.ejsTemplate || '';
+    document.getElementById('client-email').value = s.clientEmail || '';
+    document.getElementById('admin-email').value = s.adminEmail || '';
+    if (s.ejsPubKey) { try { emailjs.init(s.ejsPubKey); } catch(e){} }
+  }
+
+  await dbSeedIfEmpty();
+  const loaded = await dbLoad();
+  if (loaded) {
+    posts = loaded;
+  } else {
+    showToast('Could not connect to database');
+  }
+
+  subscribeRealtime();
+  renderAll();
+  document.getElementById('loading-overlay').style.display = 'none';
+  showToast('Connected — ' + posts.length + ' posts loaded');
+  applyClientMode();
+}
+
+function savePosts() { /* no-op: Supabase is source of truth */ }
+function saveSettings() {
+  const s = {
+    ejsPubKey: document.getElementById('ejs-pubkey').value,
+    ejsService: document.getElementById('ejs-service').value,
+    ejsTemplate: document.getElementById('ejs-template').value,
+    clientEmail: document.getElementById('client-email').value,
+    adminEmail: document.getElementById('admin-email').value,
+  };
+  localStorage.setItem('mi_settings', JSON.stringify(s));
+  if (s.ejsPubKey) { try { emailjs.init(s.ejsPubKey); } catch(e){} }
+}
+
+function renderAll() {
+  updateStats();
+  renderCalendar();
+  renderDashList();
+  renderSchedule();
+  renderReview();
+  renderHashtagLib();
+}
+
+// ── NAVIGATION ──
+function switchPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const tabs = ['dashboard','builder','schedule','review','settings'];
+  const idx = tabs.indexOf(id);
+  document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  if (id === 'builder' && !editingId) resetBuilder();
+}
+
+function toggleClientMode() {
+  if (IS_CLIENT_URL) return;
+  clientMode = !clientMode;
+  const badge = document.getElementById('mode-badge');
+  const btn = document.querySelector('.btn-switch');
+  if (clientMode) {
+    badge.className = 'mode-badge mode-client';
+    badge.textContent = 'Client view';
+    btn.textContent = 'Back to admin';
+    document.querySelectorAll('.nav-tab').forEach((t,i) => {
+      t.style.display = i === 3 ? '' : 'none';
+    });
+    switchPage('review');
+    document.getElementById('review-header').style.display = '';
+  } else {
+    badge.className = 'mode-badge mode-admin';
+    badge.textContent = 'Admin';
+    btn.textContent = 'Preview as client';
+    document.querySelectorAll('.nav-tab').forEach(t => t.style.display = '');
+    document.getElementById('review-header').style.display = '';
+    switchPage('dashboard');
+  }
+}
+
+function applyClientMode() {
+  if (!IS_CLIENT_URL) return;
+  document.getElementById('mode-badge').style.display = 'none';
+  document.querySelector('.btn-switch').style.display = 'none';
+  document.querySelectorAll('.nav-tab').forEach((t,i) => {
+    t.style.display = i === 3 ? '' : 'none';
+  });
+  switchPage('review');
+}
+
+// ── STATS ──
+function updateStats() {
+  const total = posts.length;
+  const approved = posts.filter(p => p.reviewStatus === 'approved').length;
+  const changes = posts.filter(p => p.reviewStatus === 'changes').length;
+  const pending = posts.filter(p => p.reviewStatus === 'pending').length;
+  const today = new Date();
+  const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
+  const thisWeek = posts.filter(p => { const d = new Date(p.date); return d >= today && d <= weekEnd; }).length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-changes').textContent = changes;
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-week').textContent = thisWeek;
+}
+
+// ── CALENDAR ──
+const CAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CAL_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function calPrev() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function calNext() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+
+function renderCalendar() {
+  document.getElementById('cal-month-label').textContent = CAL_MONTHS[calMonth] + ' ' + calYear;
+  const grid = document.getElementById('cal-grid');
+  let html = CAL_DAYS.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+
+  const first = new Date(calYear, calMonth, 1);
+  let startDow = first.getDay(); // 0=Sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // Mon=0
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const prevDays = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date();
+
+  let cells = [];
+  for (let i = startDow-1; i >= 0; i--) cells.push({ d: prevDays-i, cur: false });
+  for (let i = 1; i <= daysInMonth; i++) cells.push({ d: i, cur: true });
+  while (cells.length % 7 !== 0) cells.push({ d: cells.length - daysInMonth - startDow + 1, cur: false });
+
+  cells.forEach(cell => {
+    const dateStr = cell.cur ? `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(cell.d).padStart(2,'0')}` : '';
+    const dayPosts = cell.cur ? posts.filter(p => p.date === dateStr) : [];
+    const isToday = cell.cur && today.getFullYear()===calYear && today.getMonth()===calMonth && today.getDate()===cell.d;
+    const cls = ['cal-cell', cell.cur?'':'other-month', dayPosts.length?'has-posts':'', isToday?'today':''].filter(Boolean).join(' ');
+    const dots = dayPosts.slice(0,2).map(p => `<div class="cal-dot">${p.pillar.slice(0,4)}</div>`).join('');
+    html += `<div class="${cls}"><div class="cal-date">${cell.d}</div>${dots}</div>`;
+  });
+
+  grid.innerHTML = html;
+}
+
+// ── PILLAR HELPERS ──
+function pillarClass(p) {
+  return {Listing:'pb-listing',Lifestyle:'pb-lifestyle',Tips:'pb-tips','Social proof':'pb-social'}[p] || 'pb-listing';
+}
+function statusClass(s) {
+  return {draft:'sc-draft',scheduled:'sc-scheduled',approved:'sc-approved',changes:'sc-changes',live:'sc-live'}[s] || 'sc-draft';
+}
+function statusLabel(s) {
+  return {draft:'Draft',scheduled:'Scheduled',approved:'Approved',changes:'Needs changes',live:'Live'}[s] || s;
+}
+
+function thumbHTML(post) {
+  if (post.useCanva && post.canvaUrl) {
+    return `<div class="post-thumb" style="background:#f0eef0;font-size:9px;color:#888;text-align:center;padding:2px;">Canva</div>`;
+  }
+  if (post.image) return `<div class="post-thumb"><img src="${post.image}" alt=""></div>`;
+  return `<div class="post-thumb"><span class="post-thumb-placeholder">🏡</span></div>`;
+}
+
+function postRowHTML(post, extraActions='') {
+  return `
+<div class="post-row" id="row-${post.id}">
+  ${thumbHTML(post)}
+  <div class="post-info">
+    <div class="post-date">${formatDate(post.date)}</div>
+    <div class="post-brief">${post.brief || 'No brief'}</div>
+    <div class="post-platforms">${(post.platforms||[]).join(' · ')}</div>
+  </div>
+  <div class="post-pillar"><span class="pillar-badge ${pillarClass(post.pillar)}">${post.pillar}</span></div>
+  <span class="status-chip ${statusClass(post.status)}">${statusLabel(post.status)}</span>
+  <div class="post-actions">
+    <button class="icon-btn" title="Edit" onclick="editPost('${post.id}')">✏️</button>
+    <button class="icon-btn" title="Duplicate" onclick="duplicatePost('${post.id}')">📋</button>
+    <button class="icon-btn" title="Reschedule" onclick="openReschedule('${post.id}')">📅</button>
+    ${extraActions}
+    <button class="icon-btn danger" title="Delete" onclick="openDelete('${post.id}')">🗑️</button>
+  </div>
+</div>`;
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+}
+
+// ── DASHBOARD LIST ──
+function renderDashList() {
+  const statusF = document.getElementById('dash-filter-status').value;
+  const pillarF = document.getElementById('dash-filter-pillar').value;
+  const sorted = [...posts].sort((a,b)=>a.date.localeCompare(b.date));
+  const filtered = sorted.filter(p => {
+    if (statusF !== 'all' && p.status !== statusF) return false;
+    if (pillarF !== 'all' && p.pillar !== pillarF) return false;
+    return true;
+  });
+  const el = document.getElementById('dash-post-list');
+  if (!filtered.length) { el.innerHTML = '<div class="empty-state"><h3>No posts found</h3><p>Adjust your filters or create a new post.</p></div>'; return; }
+  el.innerHTML = filtered.slice(0,10).map(p => postRowHTML(p)).join('');
+}
+
+// ── SCHEDULE ──
+function renderSchedule() {
+  const monthF = document.getElementById('sched-filter-month').value;
+  const pillarF = document.getElementById('sched-filter-pillar').value;
+  const statusF = document.getElementById('sched-filter-status').value;
+  const sorted = [...posts].sort((a,b)=>a.date.localeCompare(b.date));
+  const filtered = sorted.filter(p => {
+    if (monthF !== 'all') { const d = new Date(p.date+'T12:00:00'); if(d.toLocaleString('en-GB',{month:'long'}) !== monthF) return false; }
+    if (pillarF !== 'all' && p.pillar !== pillarF) return false;
+    if (statusF !== 'all' && p.status !== statusF) return false;
+    return true;
+  });
+  const el = document.getElementById('schedule-list');
+  if (!filtered.length) { el.innerHTML = '<div class="empty-state"><h3>No posts</h3><p>Nothing matches these filters.</p></div>'; return; }
+  el.innerHTML = filtered.map(p => postRowHTML(p)).join('');
+}
+
+// ── BUILDER ──
+function resetBuilder() {
+  editingId = null;
+  document.getElementById('builder-title').textContent = 'New post';
+  document.getElementById('b-date').value = '';
+  document.getElementById('b-pillar').value = 'Listing';
+  document.getElementById('b-status').value = 'draft';
+  document.getElementById('b-brief').value = '';
+  document.getElementById('b-notes').value = '';
+  document.getElementById('b-canva-url').value = '';
+  document.getElementById('b-caption').value = '';
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('upload-zone').style.display = 'block';
+  document.getElementById('canva-preview-box').innerHTML = `<div class="canva-placeholder"><svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 12h6M9 15h4"/></svg><p style="font-size:12px;">Canva preview will appear here</p></div>`;
+  activeCaptionTab = 'ig';
+  switchCaptionTab('ig');
+  switchImgTab('upload');
+  updatePreview();
+  updateChecklist();
+}
+
+function editPost(id) {
+  const post = posts.find(p=>p.id===id);
+  if (!post) return;
+  editingId = id;
+  document.getElementById('builder-title').textContent = 'Edit post';
+  document.getElementById('b-date').value = post.date;
+  document.getElementById('b-pillar').value = post.pillar;
+  document.getElementById('b-status').value = post.status;
+  document.getElementById('b-brief').value = post.brief;
+  document.getElementById('b-notes').value = post.notes || '';
+  document.getElementById('b-canva-url').value = post.canvaUrl || '';
+
+  const caps = post.captions || {ig:'',fb:'',li:''};
+  window._editCaptions = {...caps};
+
+  document.getElementById('b-caption').value = caps.ig;
+  activeCaptionTab = 'ig';
+  switchCaptionTab('ig');
+
+  if (post.useCanva) { switchImgTab('canva'); previewCanva(); }
+  else {
+    switchImgTab('upload');
+    if (post.image) {
+      document.getElementById('upload-preview').src = post.image;
+      document.getElementById('upload-preview').style.display = 'block';
+      document.getElementById('upload-zone').style.display = 'none';
+    }
+  }
+  updatePreview();
+  updateChecklist();
+  switchPage('builder');
+}
+
+function getBuilderPost() {
+  const caps = window._editCaptions || {ig:'',fb:'',li:''};
+  caps[activeCaptionTab] = document.getElementById('b-caption').value;
+  const platforms = Array.from(document.getElementById('b-platforms').selectedOptions).map(o=>o.value);
+  return {
+    date: document.getElementById('b-date').value,
+    pillar: document.getElementById('b-pillar').value,
+    status: document.getElementById('b-status').value,
+    brief: document.getElementById('b-brief').value,
+    notes: document.getElementById('b-notes').value,
+    platforms,
+    captions: caps,
+    canvaUrl: document.getElementById('b-canva-url').value,
+    useCanva: activeImgTab === 'canva',
+    image: window._uploadedImage || (editingId ? posts.find(p=>p.id===editingId)?.image : null),
+  };
+}
+
+async function saveDraft() {
+  const data = getBuilderPost();
+  data.status = 'draft';
+  await savePostData(data);
+  showToast('Draft saved');
+}
+
+async function schedulePost() {
+  const data = getBuilderPost();
+  if (!data.date) { showToast('Please set a date first'); return; }
+  data.status = 'scheduled';
+  await savePostData(data);
+  showToast('Post scheduled!');
+}
+
+async function savePostData(data) {
+  if (editingId) {
+    const idx = posts.findIndex(p=>p.id===editingId);
+    if (idx > -1) {
+      posts[idx] = { ...posts[idx], ...data };
+      await dbUpsert(posts[idx]);
+    }
+  } else {
+    const newPost = { id: genId(), reviewStatus: 'pending', reviewComment: '', ...data };
+    posts.push(newPost);
+    await dbUpsert(newPost);
+  }
+  renderAll();
+}
+
+function clearBuilder() { window._uploadedImage = null; window._editCaptions = {ig:'',fb:'',li:''}; resetBuilder(); }
+
+// ── CAPTION TABS ──
+function switchCaptionTab(tab) {
+  if (!window._editCaptions) window._editCaptions = {ig:'',fb:'',li:''};
+  window._editCaptions[activeCaptionTab] = document.getElementById('b-caption').value;
+  activeCaptionTab = tab;
+  document.getElementById('b-caption').value = window._editCaptions[tab] || '';
+  ['ig','fb','li'].forEach(t => {
+    document.getElementById('ctab-'+t).className = 'ptab' + (t===tab?' active':'');
+  });
+  document.getElementById('pm-platform-label').textContent = PLATFORM_LABELS[tab];
+  updateCharCount();
+  updatePreview();
+}
+
+function updateCharCount() {
+  const len = document.getElementById('b-caption').value.length;
+  const limit = CHAR_LIMITS[activeCaptionTab];
+  const el = document.getElementById('char-count');
+  el.textContent = len.toLocaleString() + ' / ' + limit.toLocaleString();
+  el.className = 'char-count' + (len > limit ? ' over' : '');
+  updatePreview();
+}
+
+// ── IMAGE TABS ──
+function switchImgTab(tab) {
+  activeImgTab = tab;
+  document.getElementById('img-panel-upload').style.display = tab==='upload'?'block':'none';
+  document.getElementById('img-panel-canva').style.display = tab==='canva'?'block':'none';
+  document.getElementById('img-tab-upload').className = 'btn btn-sm ' + (tab==='upload'?'btn-primary':'btn-secondary');
+  document.getElementById('img-tab-canva').className = 'btn btn-sm ' + (tab==='canva'?'btn-primary':'btn-secondary');
+  updatePreview();
+}
+
+function handleBuildUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    window._uploadedImage = ev.target.result;
+    document.getElementById('upload-preview').src = ev.target.result;
+    document.getElementById('upload-preview').style.display = 'block';
+    document.getElementById('upload-zone').style.display = 'none';
+    updatePreview();
+    updateChecklist();
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewCanva() {
+  const url = document.getElementById('b-canva-url').value.trim();
+  const box = document.getElementById('canva-preview-box');
+  if (!url || !url.includes('canva.com')) {
+    box.innerHTML = `<div class="canva-placeholder"><p style="font-size:12px;">Paste a Canva public share link above</p></div>`;
+    return;
+  }
+  const embedUrl = url.includes('/view') ? url : url.replace('/design/', '/design/').replace(/\?.*$/, '') + '/view?embed';
+  box.innerHTML = `<iframe src="${embedUrl}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+  updatePreview();
+  updateChecklist();
+}
+
+// ── PREVIEW ──
+function updatePreview() {
+  const caption = document.getElementById('b-caption')?.value || '';
+  const date = document.getElementById('b-date')?.value || '';
+  document.getElementById('pm-caption').textContent = caption || 'Caption will appear here…';
+  document.getElementById('pm-date').textContent = date ? formatDate(date) : 'Scheduled date';
+
+  const pmImg = document.getElementById('pm-image');
+  if (activeImgTab === 'canva') {
+    const url = document.getElementById('b-canva-url').value.trim();
+    if (url && url.includes('canva.com')) {
+      const embedUrl = url.replace(/\?.*$/, '') + '/view?embed';
+      pmImg.innerHTML = `<iframe src="${embedUrl}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+    } else {
+      pmImg.innerHTML = `<div style="text-align:center;color:var(--text-light);font-size:12px;padding:24px;"><div style="font-size:28px;margin-bottom:6px;">🎨</div>Canva preview</div>`;
+    }
+  } else if (window._uploadedImage) {
+    pmImg.innerHTML = `<img src="${window._uploadedImage}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    pmImg.innerHTML = `<div style="text-align:center;color:var(--text-light);font-size:12px;padding:24px;"><div style="font-size:28px;margin-bottom:6px;">🏡</div>Image preview</div>`;
+  }
+}
+
+function updateChecklist() {
+  const items = [
+    { label: 'Date set', ok: !!document.getElementById('b-date')?.value },
+    { label: 'Content brief', ok: !!(document.getElementById('b-brief')?.value?.length > 3) },
+    { label: 'Image / Canva link', ok: !!(window._uploadedImage || (activeImgTab==='canva' && document.getElementById('b-canva-url')?.value?.includes('canva.com'))) },
+    { label: 'Caption written', ok: !!(document.getElementById('b-caption')?.value?.length > 10) },
+  ];
+  document.getElementById('checklist').innerHTML = items.map(i =>
+    `<div style="display:flex;align-items:center;gap:8px;color:${i.ok?'var(--green)':'var(--text-muted)'};">
+      <span style="font-size:14px;">${i.ok?'✅':'⬜'}</span>${i.label}
+    </div>`
+  ).join('');
+}
+
+document.getElementById('b-caption').addEventListener('input', updatePreview);
+document.getElementById('b-date').addEventListener('change', () => { updatePreview(); updateChecklist(); });
+document.getElementById('b-brief').addEventListener('input', updateChecklist);
+
+// ── HASHTAGS ──
+function renderHashtagLib() {
+  const lib = document.getElementById('hashtag-lib');
+  if (!lib) return;
+  lib.innerHTML = window._hashtags.map(h =>
+    `<span class="htag" onclick="insertHashtag('${h}')">${h}</span>`
+  ).join('');
+}
+
+function insertHashtag(tag) {
+  const ta = document.getElementById('b-caption');
+  const val = ta.value;
+  ta.value = val + (val.endsWith(' ') || !val ? '' : ' ') + tag + ' ';
+  if (!window._editCaptions) window._editCaptions = {ig:'',fb:'',li:''};
+  window._editCaptions[activeCaptionTab] = ta.value;
+  updateCharCount();
+}
+
+function addHashtag() {
+  const input = document.getElementById('new-hashtag');
+  let tag = input.value.trim();
+  if (!tag) return;
+  if (!tag.startsWith('#')) tag = '#' + tag;
+  if (!window._hashtags.includes(tag)) {
+    window._hashtags.push(tag);
+    localStorage.setItem('mi_hashtags', JSON.stringify(window._hashtags));
+    renderHashtagLib();
+  }
+  input.value = '';
+}
+
+// ── REVIEW ──
+function renderReview() {
+  const monthF = document.getElementById('rev-filter-month').value;
+  const statusF = document.getElementById('rev-filter-status').value;
+  const sorted = [...posts].sort((a,b)=>a.date.localeCompare(b.date))
+    .filter(p => p.status === 'scheduled' || p.status === 'approved' || p.status === 'changes' || p.reviewStatus !== 'pending');
+
+  const filtered = sorted.filter(p => {
+    if (monthF !== 'all') { const d = new Date(p.date+'T12:00:00'); if(d.toLocaleString('en-GB',{month:'long'}) !== monthF) return false; }
+    if (statusF !== 'all' && p.reviewStatus !== statusF) return false;
+    return true;
+  });
+
+  const approved = posts.filter(p=>p.reviewStatus==='approved').length;
+  const changes = posts.filter(p=>p.reviewStatus==='changes').length;
+  const pending = posts.filter(p=>p.reviewStatus==='pending').length;
+  const reviewed = approved + changes;
+  const total = posts.filter(p=>p.status==='scheduled'||p.reviewStatus!=='pending').length || posts.length;
+
+  document.getElementById('rev-pill-approved').textContent = approved + ' approved';
+  document.getElementById('rev-pill-changes').textContent = changes + ' changes';
+  document.getElementById('rev-pill-pending').textContent = pending + ' pending';
+  document.getElementById('review-prog-fill').style.width = Math.round((reviewed/Math.max(total,1))*100) + '%';
+
+  const grid = document.getElementById('review-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><h3>No posts to review yet</h3><p>Schedule some posts first, then send this page to your client.</p></div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(p => reviewCardHTML(p)).join('');
+}
+
+function reviewCardHTML(post) {
+  const rs = post.reviewStatus || 'pending';
+  const caps = post.captions || {ig:'',fb:'',li:''};
+  const approveActive = rs === 'approved' ? ' active' : '';
+  const changesActive = rs === 'changes' ? ' active' : '';
+  const showComment = rs === 'changes' ? '' : 'display:none;';
+  const showBanner = rs === 'approved' ? '' : 'display:none;';
+
+  let imgHTML = '';
+  if (post.useCanva && post.canvaUrl) {
+    const embedUrl = post.canvaUrl.replace(/\?.*$/, '') + '/view?embed';
+    imgHTML = `<iframe src="${embedUrl}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+  } else if (post.image) {
+    imgHTML = `<img src="${post.image}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    imgHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--text-light);font-size:12px;gap:6px;"><span style="font-size:28px;">🏡</span>Image pending</div>`;
+  }
+
+  return `
+<div class="review-card ${rs}" id="rcard-${post.id}">
+  <div class="rc-image">${imgHTML}</div>
+  <div class="rc-body">
+    <div class="rc-meta">
+      <span style="font-size:11px;font-weight:600;color:var(--text-muted);">${formatDate(post.date)}</span>
+      <span class="pillar-badge ${pillarClass(post.pillar)}">${post.pillar}</span>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">${post.brief}</div>
+    <div class="rc-caption-wrap">
+      <div class="rc-platform-tabs">
+        <button class="ptab active" id="rtab-${post.id}-ig" onclick="switchReviewTab('${post.id}','ig')">IG</button>
+        <button class="ptab" id="rtab-${post.id}-fb" onclick="switchReviewTab('${post.id}','fb')">FB</button>
+        <button class="ptab" id="rtab-${post.id}-li" onclick="switchReviewTab('${post.id}','li')">LI</button>
+      </div>
+      <div class="rc-caption" id="rcap-${post.id}">${caps.ig || '<span style="color:var(--text-light);">Caption coming soon</span>'}</div>
+    </div>
+    <div class="rc-actions">
+      <button class="rc-btn rc-approve${approveActive}" id="rba-${post.id}" onclick="setReviewStatus('${post.id}','approved')">Approve</button>
+      <button class="rc-btn rc-changes${changesActive}" id="rbc-${post.id}" onclick="setReviewStatus('${post.id}','changes')">Request changes</button>
+    </div>
+    <div class="rc-comment" id="rcomment-${post.id}" style="${showComment}">
+      <textarea placeholder="What needs to change?" oninput="setReviewComment('${post.id}',this.value)">${post.reviewComment||''}</textarea>
+    </div>
+    <div class="rc-status-banner rsb-approved" id="rbanner-${post.id}" style="${showBanner}">Approved</div>
+  </div>
+</div>`;
+}
+
+function switchReviewTab(postId, tab) {
+  const post = posts.find(p=>p.id===postId); if (!post) return;
+  const caps = post.captions || {ig:'',fb:'',li:''};
+  document.getElementById('rcap-'+postId).innerHTML = caps[tab] || '<span style="color:var(--text-light);">Caption coming soon</span>';
+  ['ig','fb','li'].forEach(t => {
+    document.getElementById('rtab-'+postId+'-'+t).className = 'ptab' + (t===tab?' active':'');
+  });
+}
+
+async function setReviewStatus(id, status) {
+  const post = posts.find(p=>p.id===id); if (!post) return;
+  post.reviewStatus = status;
+  if (status === 'approved') post.status = 'approved';
+  else if (status === 'changes') post.status = 'changes';
+  await dbUpsert(post);
+  updateStats();
+
+  const card = document.getElementById('rcard-'+id);
+  card.className = 'review-card ' + status;
+  document.getElementById('rba-'+id).className = 'rc-btn rc-approve' + (status==='approved'?' active':'');
+  document.getElementById('rbc-'+id).className = 'rc-btn rc-changes' + (status==='changes'?' active':'');
+  document.getElementById('rcomment-'+id).style.display = status==='changes'?'':'none';
+  document.getElementById('rbanner-'+id).style.display = status==='approved'?'':'none';
+
+  const prog = document.getElementById('review-prog-fill');
+  const rev = posts.filter(p=>p.reviewStatus!=='pending').length;
+  prog.style.width = Math.round((rev/posts.length)*100) + '%';
+  document.getElementById('rev-pill-approved').textContent = posts.filter(p=>p.reviewStatus==='approved').length + ' approved';
+  document.getElementById('rev-pill-changes').textContent = posts.filter(p=>p.reviewStatus==='changes').length + ' changes';
+  document.getElementById('rev-pill-pending').textContent = posts.filter(p=>p.reviewStatus==='pending').length + ' pending';
+}
+
+async function setReviewComment(id, val) {
+  const post = posts.find(p=>p.id===id); if (!post) return;
+  post.reviewComment = val;
+  await dbUpsert(post);
+}
+
+async function submitReview() {
+  const changed = posts.filter(p=>p.reviewStatus==='changes');
+  const approved = posts.filter(p=>p.reviewStatus==='approved');
+  const settings = JSON.parse(localStorage.getItem('mi_settings')||'{}');
+
+  if (settings.ejsPubKey && settings.ejsService && settings.ejsTemplate && settings.adminEmail) {
+    const comments = changed.map(p=>`${formatDate(p.date)} — ${p.pillar}: ${p.reviewComment||'No comment'}`).join('\n');
+    emailjs.send(settings.ejsService, settings.ejsTemplate, {
+      to_email: settings.adminEmail,
+      from_name: 'Content Review Portal',
+      subject: 'M I Properties — Client review submitted',
+      message: `Review submitted.\n\nApproved: ${approved.length} posts\nNeeds changes: ${changed.length} posts\n\nPosts needing changes:\n${comments||'None'}`,
+    }).then(()=>showToast('Review submitted & email sent!')).catch(()=>showToast('Review saved (email failed — check settings)'));
+  } else {
+    showToast('Review saved! Set up email in Settings to notify the team.');
+  }
+}
+
+// ── DELETE / RESCHEDULE ──
+function openDelete(id) { deleteTargetId = id; document.getElementById('delete-modal').classList.add('open'); }
+async function confirmDelete() {
+  posts = posts.filter(p=>p.id!==deleteTargetId);
+  await dbDelete(deleteTargetId);
+  renderAll();
+  closeModal('delete-modal');
+  showToast('Post deleted');
+}
+
+function openReschedule(id) {
+  rescheduleTargetId = id;
+  const post = posts.find(p=>p.id===id);
+  document.getElementById('reschedule-date').value = post?.date || '';
+  document.getElementById('reschedule-modal').classList.add('open');
+}
+async function confirmReschedule() {
+  const newDate = document.getElementById('reschedule-date').value;
+  const post = posts.find(p=>p.id===rescheduleTargetId);
+  if (post && newDate) {
+    post.date = newDate;
+    await dbUpsert(post);
+    renderAll();
+    showToast('Post rescheduled');
+  }
+  closeModal('reschedule-modal');
+}
+
+async function duplicatePost(id) {
+  const post = posts.find(p=>p.id===id); if (!post) return;
+  const copy = JSON.parse(JSON.stringify(post));
+  copy.id = genId();
+  copy.status = 'draft';
+  copy.reviewStatus = 'pending';
+  copy.reviewComment = '';
+  posts.push(copy);
+  await dbUpsert(copy);
+  renderAll();
+  showToast('Post duplicated as draft');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── EMAIL ──
+function testEmail() {
+  const s = JSON.parse(localStorage.getItem('mi_settings')||'{}');
+  if (!s.ejsPubKey||!s.ejsService||!s.ejsTemplate||!s.adminEmail) { showToast('Fill in all EmailJS fields first'); return; }
+  emailjs.init(s.ejsPubKey);
+  emailjs.send(s.ejsService, s.ejsTemplate, {
+    to_email: s.adminEmail,
+    from_name: 'M I Properties Studio',
+    subject: 'Test email from Content Studio',
+    message: 'Your email notifications are working correctly.',
+  }).then(()=>showToast('Test email sent!')).catch(e=>showToast('Email failed: '+e.text));
+}
+
+// ── EXPORT ──
+function exportCSV() {
+  const headers = ['Date','Pillar','Brief','Status','Platforms','Instagram caption','Facebook caption','LinkedIn caption'];
+  const rows = [...posts].sort((a,b)=>a.date.localeCompare(b.date)).map(p => [
+    p.date, p.pillar, `"${(p.brief||'').replace(/"/g,'""')}"`, p.status,
+    (p.platforms||[]).join('|'),
+    `"${(p.captions?.ig||'').replace(/"/g,'""')}"`,
+    `"${(p.captions?.fb||'').replace(/"/g,'""')}"`,
+    `"${(p.captions?.li||'').replace(/"/g,'""')}"`,
+  ]);
+  const csv = [headers, ...rows].map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'mi_properties_content_plan.csv'; a.click();
+  showToast('CSV exported');
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(posts,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'mi_properties_posts.json'; a.click();
+}
+
+async function confirmClearAll() {
+  if (confirm('Delete all posts? This cannot be undone.')) {
+    await db.from('posts').delete().neq('id','__none__');
+    posts = [];
+    renderAll();
+    showToast('All posts cleared');
+  }
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ── CLOSE MODALS ON OUTSIDE CLICK ──
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function copyClientLink() {
+  const link = window.location.origin + window.location.pathname + '?client';
+  navigator.clipboard.writeText(link).then(() => showToast('Client link copied!'));
+}
+
+function populateClientLink() {
+  const el = document.getElementById('client-link-display');
+  if (el) el.value = window.location.origin + window.location.pathname + '?client';
+}
+
+window._editCaptions = {ig:'',fb:'',li:''};
+populateClientLink();
+init();
+</script>
+</body>
+</html>
