@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MI Properties — Content Review</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1A2744;
+    --blue: #2B5FAC;
+    --blue-light: #E8F0F9;
+    --green-light: #D6F0E5;
+    --green-dark: #1A7A52;
+    --amber-light: #FFF0CC;
+    --amber-dark: #A05A00;
+    --pink-light: #F9E0EC;
+    --pink-dark: #8B2252;
+    --border: rgba(0,0,0,0.1);
+    --text: #1a1a1a;
+    --text-muted: #666;
+    --surface: #f8f8f7;
+    --card: #ffffff;
+    --approved-bg: #D6F0E5;
+    --approved-text: #0F6E56;
+    --changes-bg: #FFF0CC;
+    --changes-text: #A05A00;
+    --pending-bg: #f0f0ef;
+    --pending-text: #666;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--navy);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header .logo { color: #fff; font-size: 17px; font-weight: 600; letter-spacing: 0.02em; }
+  header .subtitle { color: rgba(255,255,255,0.55); font-size: 13px; margin-top: 1px; }
+  header .badge { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); font-size: 12px; padding: 4px 12px; border-radius: 20px; }
+
+  .progress-bar { background: var(--navy); padding: 0 32px 18px; display: flex; align-items: center; gap: 16px; }
+  .prog-track { flex: 1; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; }
+  .prog-fill { height: 100%; background: #4CAF87; border-radius: 2px; transition: width 0.4s ease; }
+  .prog-label { color: rgba(255,255,255,0.6); font-size: 12px; white-space: nowrap; }
+
+  .controls { padding: 20px 32px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .controls select, .controls button {
+    font-size: 13px; border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 12px; background: var(--card); cursor: pointer; color: var(--text);
+    outline: none;
+  }
+  .controls button:hover { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+  .controls .filter-label { font-size: 13px; color: var(--text-muted); margin-right: 2px; }
+  .controls .spacer { flex: 1; }
+  .controls .summary-pill {
+    font-size: 12px; padding: 5px 12px; border-radius: 20px; font-weight: 500;
+  }
+  .pill-approved { background: var(--approved-bg); color: var(--approved-text); }
+  .pill-changes { background: var(--changes-bg); color: var(--changes-text); }
+  .pill-pending { background: var(--pending-bg); color: var(--pending-text); }
+
+  main { padding: 20px 32px 48px; }
+
+  .week-group { margin-bottom: 32px; }
+  .week-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+  .post-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; transition: border-color 0.2s;
+  }
+  .post-card.status-approved { border-color: #4CAF87; }
+  .post-card.status-changes { border-color: #E8A800; }
+
+  .card-image {
+    width: 100%; aspect-ratio: 1; background: #e8e8e6;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .card-image img { width: 100%; height: 100%; object-fit: cover; }
+  .card-image .img-placeholder {
+    text-align: center; color: #aaa; font-size: 13px; padding: 20px;
+  }
+  .card-image .img-placeholder svg { display: block; margin: 0 auto 8px; opacity: 0.4; }
+  .upload-btn {
+    position: absolute; bottom: 8px; right: 8px;
+    background: rgba(0,0,0,0.55); color: #fff; border: none; border-radius: 6px;
+    font-size: 11px; padding: 5px 10px; cursor: pointer;
+  }
+  .upload-btn:hover { background: rgba(0,0,0,0.75); }
+
+  .card-body { padding: 14px 16px; }
+
+  .card-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .card-date { font-size: 12px; color: var(--text-muted); }
+  .pillar-tag {
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+  }
+  .pillar-listing { background: var(--blue-light); color: #0C447C; }
+  .pillar-lifestyle { background: var(--green-light); color: var(--green-dark); }
+  .pillar-tips { background: var(--amber-light); color: var(--amber-dark); }
+  .pillar-social { background: var(--pink-light); color: var(--pink-dark); }
+
+  .brief { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
+
+  .platform-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+  .ptab {
+    font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
+    border: 1px solid var(--border); background: none; cursor: pointer; color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .ptab.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  .caption-area {
+    width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+    font-size: 13px; line-height: 1.5; color: var(--text); resize: vertical;
+    min-height: 80px; font-family: inherit; background: var(--surface);
+    outline: none; transition: border-color 0.2s;
+  }
+  .caption-area:focus { border-color: var(--blue); }
+  .caption-area::placeholder { color: #bbb; }
+
+  .card-actions { margin-top: 12px; display: flex; gap: 8px; }
+  .action-btn {
+    flex: 1; font-size: 12px; font-weight: 500; padding: 7px 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: none; cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .btn-approve { color: var(--approved-text); }
+  .btn-approve:hover, .btn-approve.active { background: var(--approved-bg); border-color: #4CAF87; color: var(--approved-text); }
+  .btn-changes { color: var(--changes-text); }
+  .btn-changes:hover, .btn-changes.active { background: var(--changes-bg); border-color: #E8A800; color: var(--changes-text); }
+
+  .comment-area {
+    display: none; margin-top: 10px;
+  }
+  .comment-area.visible { display: block; }
+  .comment-area textarea {
+    width: 100%; border: 1px solid #E8A800; border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; font-family: inherit; color: var(--text); background: var(--changes-bg);
+    resize: vertical; min-height: 60px; outline: none;
+  }
+
+  .status-banner {
+    margin-top: 10px; font-size: 12px; font-weight: 500; padding: 6px 10px;
+    border-radius: 6px; text-align: center;
+  }
+  .status-approved { background: var(--approved-bg); color: var(--approved-text); }
+  .status-changes { background: var(--changes-bg); color: var(--changes-text); }
+
+  .export-bar {
+    margin: 24px 0 0; padding: 16px 20px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .export-bar p { font-size: 13px; color: var(--text-muted); }
+  .export-btn {
+    font-size: 13px; font-weight: 500; padding: 9px 20px; border-radius: 8px;
+    background: var(--navy); color: #fff; border: none; cursor: pointer;
+  }
+  .export-btn:hover { background: var(--blue); }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 600px) {
+    header, .progress-bar, .controls, main { padding-left: 16px; padding-right: 16px; }
+    .posts-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">MI Properties</div>
+    <div class="subtitle">Social content review — May to July 2026</div>
+  </div>
+  <div class="badge">Client preview</div>
+</header>
+
+<div class="progress-bar">
+  <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="prog-label" id="prog-label">0 / 36 reviewed</div>
+</div>
+
+<div class="controls">
+  <span class="filter-label">Filter:</span>
+  <select id="filter-month" onchange="render()">
+    <option value="all">All months</option>
+    <option value="May 2026">May 2026</option>
+    <option value="June 2026">June 2026</option>
+    <option value="July 2026">July 2026</option>
+  </select>
+  <select id="filter-status" onchange="render()">
+    <option value="all">All statuses</option>
+    <option value="pending">Pending</option>
+    <option value="approved">Approved</option>
+    <option value="changes">Needs changes</option>
+  </select>
+  <select id="filter-pillar" onchange="render()">
+    <option value="all">All pillars</option>
+    <option value="Listing">Listing</option>
+    <option value="Lifestyle">Lifestyle</option>
+    <option value="Tips">Tips</option>
+    <option value="Social proof">Social proof</option>
+  </select>
+  <div class="spacer"></div>
+  <span class="summary-pill pill-approved" id="pill-approved">0 approved</span>
+  <span class="summary-pill pill-changes" id="pill-changes">0 changes</span>
+  <span class="summary-pill pill-pending" id="pill-pending">36 pending</span>
+</div>
+
+<main id="main"></main>
+
+<script>
+const POSTS = [
+  { id:1,  week:"Week 1", month:"May 2026",  date:"Mon 12 May", pillar:"Listing",      brief:"New listing — upload agent photo + price. Short punchy caption.",                           asset:"Listing photo" },
+  { id:2,  week:"Week 1", month:"May 2026",  date:"Wed 14 May", pillar:"Lifestyle",    brief:"'Why the Algarve?' — your best golden-hour beach or village shot.",                        asset:"Phone photo" },
+  { id:3,  week:"Week 1", month:"May 2026",  date:"Fri 16 May", pillar:"Tips",         brief:"'5 things UK buyers ask before moving to Portugal'",                                        asset:"Text / Canva" },
+  { id:4,  week:"Week 2", month:"May 2026",  date:"Mon 19 May", pillar:"Listing",      brief:"Feature a listing. Highlight a standout detail — pool, terrace, view.",                     asset:"Listing photo" },
+  { id:5,  week:"Week 2", month:"May 2026",  date:"Wed 21 May", pillar:"Social proof", brief:"Client testimonial — screenshot or quote card.",                                             asset:"Screenshot" },
+  { id:6,  week:"Week 2", month:"May 2026",  date:"Fri 23 May", pillar:"Lifestyle",    brief:"Local food or market photo. 'This is what Saturdays look like.'",                           asset:"Phone photo" },
+  { id:7,  week:"Week 3", month:"May 2026",  date:"Mon 26 May", pillar:"Listing",      brief:"Listing feature. Beds, price, location, link in bio.",                                      asset:"Listing photo" },
+  { id:8,  week:"Week 3", month:"May 2026",  date:"Wed 28 May", pillar:"Tips",         brief:"'What is NHR tax status and how does it benefit UK buyers?'",                               asset:"Text post" },
+  { id:9,  week:"Week 3", month:"May 2026",  date:"Fri 30 May", pillar:"Lifestyle",    brief:"Behind the scenes — Marc on a viewing or meeting clients.",                                 asset:"BTS photo" },
+  { id:10, week:"Week 4", month:"June 2026", date:"Mon 2 Jun",  pillar:"Listing",      brief:"New listing or price-reduced property. 'What do you think of this one?'",                  asset:"Listing photo" },
+  { id:11, week:"Week 4", month:"June 2026", date:"Wed 4 Jun",  pillar:"Social proof", brief:"'Sold!' post — photo of happy buyers or just the property.",                                asset:"Client photo" },
+  { id:12, week:"Week 4", month:"June 2026", date:"Fri 6 Jun",  pillar:"Tips",         brief:"'How long does buying property in Portugal actually take?' — timeline.",                    asset:"Text / infographic" },
+  { id:13, week:"Week 5", month:"June 2026", date:"Mon 9 Jun",  pillar:"Listing",      brief:"Summer listing push. Lead with the pool or outdoor space.",                                 asset:"Listing photo" },
+  { id:14, week:"Week 5", month:"June 2026", date:"Wed 11 Jun", pillar:"Lifestyle",    brief:"Summer in the Algarve — beach, sun, lifestyle shot.",                                       asset:"Phone photo" },
+  { id:15, week:"Week 5", month:"June 2026", date:"Fri 13 Jun", pillar:"Tips",         brief:"'Can UK citizens still buy in Portugal post-Brexit?'",                                      asset:"Text post" },
+  { id:16, week:"Week 6", month:"June 2026", date:"Mon 16 Jun", pillar:"Listing",      brief:"Luxury feature — villa, sea views, or character property.",                                 asset:"Listing photo" },
+  { id:17, week:"Week 6", month:"June 2026", date:"Wed 18 Jun", pillar:"Social proof", brief:"Testimonial from a UK buyer who relocated.",                                                 asset:"Screenshot" },
+  { id:18, week:"Week 6", month:"June 2026", date:"Fri 20 Jun", pillar:"Lifestyle",    brief:"Marc's personal touch — why he loves the Algarve.",                                         asset:"BTS / personal photo" },
+  { id:19, week:"Week 7", month:"June 2026", date:"Mon 23 Jun", pillar:"Listing",      brief:"Apartment, townhouse, or something different from the usual villas.",                       asset:"Listing photo" },
+  { id:20, week:"Week 7", month:"June 2026", date:"Wed 25 Jun", pillar:"Tips",         brief:"'What areas in the Algarve are best for families?' Tavira vs Lagos vs Albufeira.",          asset:"Text post" },
+  { id:21, week:"Week 7", month:"June 2026", date:"Fri 27 Jun", pillar:"Lifestyle",    brief:"End of June — long evenings, terraces, al fresco dining.",                                  asset:"Phone photo" },
+  { id:22, week:"Week 8", month:"July 2026", date:"Mon 30 Jun", pillar:"Social proof", brief:"Half-year milestone post — 'X properties sold this year.'",                                 asset:"Stats / text" },
+  { id:23, week:"Week 8", month:"July 2026", date:"Wed 2 Jul",  pillar:"Listing",      brief:"New listing — go straight to the best feature photo first.",                               asset:"Listing photo" },
+  { id:24, week:"Week 8", month:"July 2026", date:"Fri 4 Jul",  pillar:"Tips",         brief:"'What are the buying costs in Portugal?' — IMT, stamp duty, legal fees.",                  asset:"Text post" },
+  { id:25, week:"Week 9", month:"July 2026", date:"Mon 7 Jul",  pillar:"Listing",      brief:"July listing push — peak buying enquiry season. CTA to enquire.",                          asset:"Listing photo" },
+  { id:26, week:"Week 9", month:"July 2026", date:"Wed 9 Jul",  pillar:"Lifestyle",    brief:"Peak summer shot — clifftops, golden light, turquoise water.",                             asset:"Phone photo" },
+  { id:27, week:"Week 9", month:"July 2026", date:"Fri 11 Jul", pillar:"Tips",         brief:"'How to get a mortgage in Portugal as a non-resident'",                                    asset:"Text post" },
+  { id:28, week:"Week 10",month:"July 2026", date:"Mon 14 Jul", pillar:"Listing",      brief:"Listing at a different price point to hit a different audience.",                           asset:"Listing photo" },
+  { id:29, week:"Week 10",month:"July 2026", date:"Wed 16 Jul", pillar:"Social proof", brief:"Testimonial from a summer buyer. 'We visited in July and made an offer.'",                 asset:"Screenshot" },
+  { id:30, week:"Week 10",month:"July 2026", date:"Fri 18 Jul", pillar:"Lifestyle",    brief:"Local neighbourhood feature — a village or town Marc loves.",                               asset:"Phone photo" },
+  { id:31, week:"Week 11",month:"July 2026", date:"Mon 21 Jul", pillar:"Listing",      brief:"Premium villa showcase — go big on visuals for the luxury buyer.",                          asset:"Listing photo" },
+  { id:32, week:"Week 11",month:"July 2026", date:"Wed 23 Jul", pillar:"Tips",         brief:"'What to look for on a property viewing in Portugal' — Marc's checklist.",                 asset:"Text post" },
+  { id:33, week:"Week 11",month:"July 2026", date:"Fri 25 Jul", pillar:"Lifestyle",    brief:"'Life here really does look like this.' Relatable and aspirational.",                       asset:"BTS / lifestyle" },
+  { id:34, week:"Week 12",month:"July 2026", date:"Mon 28 Jul", pillar:"Listing",      brief:"Final push. 'Enquiries up this summer — get in touch before they go.'",                    asset:"Listing photo" },
+  { id:35, week:"Week 12",month:"July 2026", date:"Wed 30 Jul", pillar:"Social proof", brief:"3-month wrap-up — properties sold, enquiries, or thank you to followers.",                  asset:"Stats / text" },
+  { id:36, week:"Week 12",month:"July 2026", date:"Fri 1 Aug",  pillar:"Tips",         brief:"'Thinking of making a move? Here's what the Algarve market looks like right now.'",        asset:"Text post" },
+];
+
+const state = {};
+POSTS.forEach(p => {
+  state[p.id] = { status: "pending", captions: { ig: "", fb: "", li: "" }, comment: "", image: null, activePlatform: "ig" };
+});
+
+function pillarClass(p) {
+  if (p === "Listing") return "pillar-listing";
+  if (p === "Lifestyle") return "pillar-lifestyle";
+  if (p === "Tips") return "pillar-tips";
+  return "pillar-social";
+}
+
+function updateProgress() {
+  const total = POSTS.length;
+  const reviewed = POSTS.filter(p => state[p.id].status !== "pending").length;
+  const approved = POSTS.filter(p => state[p.id].status === "approved").length;
+  const changes = POSTS.filter(p => state[p.id].status === "changes").length;
+  const pending = total - reviewed;
+  const pct = Math.round((reviewed / total) * 100);
+  document.getElementById("prog-fill").style.width = pct + "%";
+  document.getElementById("prog-label").textContent = reviewed + " / " + total + " reviewed";
+  document.getElementById("pill-approved").textContent = approved + " approved";
+  document.getElementById("pill-changes").textContent = changes + " changes";
+  document.getElementById("pill-pending").textContent = pending + " pending";
+}
+
+function setStatus(id, status) {
+  state[id].status = status;
+  const card = document.getElementById("card-" + id);
+  card.className = "post-card status-" + status;
+  const ba = document.getElementById("btn-approve-" + id);
+  const bc = document.getElementById("btn-changes-" + id);
+  const sb = document.getElementById("status-banner-" + id);
+  const ca = document.getElementById("comment-area-" + id);
+  ba.className = "action-btn btn-approve" + (status === "approved" ? " active" : "");
+  bc.className = "action-btn btn-changes" + (status === "changes" ? " active" : "");
+  if (status === "approved") {
+    sb.className = "status-banner status-approved";
+    sb.textContent = "Approved";
+    sb.style.display = "block";
+    ca.className = "comment-area";
+  } else if (status === "changes") {
+    sb.style.display = "none";
+    ca.className = "comment-area visible";
+  } else {
+    sb.style.display = "none";
+    ca.className = "comment-area";
+  }
+  updateProgress();
+}
+
+function setCaption(id, platform, value) {
+  state[id].captions[platform] = value;
+}
+
+function setComment(id, value) {
+  state[id].comment = value;
+}
+
+function switchPlatform(id, platform) {
+  state[id].activePlatform = platform;
+  ["ig","fb","li"].forEach(p => {
+    document.getElementById("ptab-" + id + "-" + p).className = "ptab" + (p === platform ? " active" : "");
+  });
+  const ta = document.getElementById("caption-" + id);
+  ta.value = state[id].captions[platform];
+  ta.dataset.platform = platform;
+}
+
+function handleImageUpload(id, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    state[id].image = e.target.result;
+    const imgEl = document.getElementById("img-" + id);
+    const placeholder = document.getElementById("placeholder-" + id);
+    imgEl.src = e.target.result;
+    imgEl.style.display = "block";
+    placeholder.style.display = "none";
+  };
+  reader.readAsDataURL(file);
+}
+
+function render() {
+  const filterMonth = document.getElementById("filter-month").value;
+  const filterStatus = document.getElementById("filter-status").value;
+  const filterPillar = document.getElementById("filter-pillar").value;
+
+  const filtered = POSTS.filter(p => {
+    if (filterMonth !== "all" && p.month !== filterMonth) return false;
+    if (filterStatus !== "all" && state[p.id].status !== filterStatus) return false;
+    if (filterPillar !== "all" && p.pillar !== filterPillar) return false;
+    return true;
+  });
+
+  const byWeek = {};
+  filtered.forEach(p => {
+    const key = p.month + " — " + p.week;
+    if (!byWeek[key]) byWeek[key] = [];
+    byWeek[key].push(p);
+  });
+
+  const main = document.getElementById("main");
+
+  if (filtered.length === 0) {
+    main.innerHTML = '<p style="color:var(--text-muted);padding:32px 0;font-size:14px;">No posts match the current filters.</p>';
+    return;
+  }
+
+  let html = "";
+  Object.entries(byWeek).forEach(([week, posts]) => {
+    html += `<div class="week-group"><div class="week-label">${week}</div><div class="posts-grid">`;
+    posts.forEach(p => {
+      const s = state[p.id];
+      const statusClass = s.status !== "pending" ? "status-" + s.status : "";
+      const commentVisible = s.status === "changes" ? "visible" : "";
+      const approveActive = s.status === "approved" ? " active" : "";
+      const changesActive = s.status === "changes" ? " active" : "";
+      const bannerDisplay = s.status === "approved" ? "block" : "none";
+      const bannerClass = s.status === "approved" ? "status-approved" : "";
+      const bannerText = s.status === "approved" ? "Approved" : "";
+      const imgDisplay = s.image ? "block" : "none";
+      const placeholderDisplay = s.image ? "none" : "flex";
+      const igActive = s.activePlatform === "ig" ? " active" : "";
+      const fbActive = s.activePlatform === "fb" ? " active" : "";
+      const liActive = s.activePlatform === "li" ? " active" : "";
+
+      html += `
+<div class="post-card ${statusClass}" id="card-${p.id}">
+  <div class="card-image">
+    <img id="img-${p.id}" src="${s.image || ""}" style="display:${imgDisplay}" alt="Post image">
+    <div id="placeholder-${p.id}" style="display:${placeholderDisplay};flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:#bbb;">
+      <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      <span style="font-size:12px;margin-top:6px;">${p.asset}</span>
+    </div>
+    <label class="upload-btn" title="Upload image">
+      Upload image
+      <input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(${p.id}, this)">
+    </label>
+  </div>
+  <div class="card-body">
+    <div class="card-meta">
+      <span class="card-date">${p.date}</span>
+      <span class="pillar-tag ${pillarClass(p.pillar)}">${p.pillar}</span>
+    </div>
+    <div class="brief">${p.brief}</div>
+    <div class="platform-tabs">
+      <button class="ptab${igActive}" id="ptab-${p.id}-ig" onclick="switchPlatform(${p.id},'ig')">Instagram</button>
+      <button class="ptab${fbActive}" id="ptab-${p.id}-fb" onclick="switchPlatform(${p.id},'fb')">Facebook</button>
+      <button class="ptab${liActive}" id="ptab-${p.id}-li" onclick="switchPlatform(${p.id},'li')">LinkedIn</button>
+    </div>
+    <textarea class="caption-area" id="caption-${p.id}" data-platform="${s.activePlatform}" placeholder="Caption goes here…" oninput="setCaption(${p.id}, this.dataset.platform, this.value)">${s.captions[s.activePlatform]}</textarea>
+    <div class="card-actions">
+      <button class="action-btn btn-approve${approveActive}" id="btn-approve-${p.id}" onclick="setStatus(${p.id},'approved')">Approve</button>
+      <button class="action-btn btn-changes${changesActive}" id="btn-changes-${p.id}" onclick="setStatus(${p.id},'changes')">Request changes</button>
+    </div>
+    <div class="comment-area ${commentVisible}" id="comment-area-${p.id}">
+      <textarea placeholder="What needs to change?" oninput="setComment(${p.id}, this.value)">${s.comment}</textarea>
+    </div>
+    <div class="status-banner ${bannerClass}" id="status-banner-${p.id}" style="display:${bannerDisplay}">${bannerText}</div>
+  </div>
+</div>`;
+    });
+    html += "</div></div>";
+  });
+
+  html += `
+<div class="export-bar">
+  <p>When you're done reviewing, export a summary to share back with the team.</p>
+  <button class="export-btn" onclick="exportSummary()">Export review summary</button>
+</div>`;
+
+  main.innerHTML = html;
+  updateProgress();
+}
+
+function exportSummary() {
+  const approved = POSTS.filter(p => state[p.id].status === "approved");
+  const changes = POSTS.filter(p => state[p.id].status === "changes");
+  const pending = POSTS.filter(p => state[p.id].status === "pending");
+
+  let text = "MI Properties — Content Review Summary\n";
+  text += "Generated: " + new Date().toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" }) + "\n\n";
+  text += "OVERVIEW\n";
+  text += "Approved:       " + approved.length + " posts\n";
+  text += "Needs changes:  " + changes.length + " posts\n";
+  text += "Pending review: " + pending.length + " posts\n\n";
+
+  if (changes.length > 0) {
+    text += "POSTS NEEDING CHANGES\n" + "—".repeat(40) + "\n";
+    changes.forEach(p => {
+      const s = state[p.id];
+      text += "\n" + p.date + " — " + p.pillar + "\n";
+      text += p.brief + "\n";
+      if (s.comment) text += "Comment: " + s.comment + "\n";
+      if (s.captions.ig) text += "IG caption: " + s.captions.ig + "\n";
+      if (s.captions.fb) text += "FB caption: " + s.captions.fb + "\n";
+      if (s.captions.li) text += "LI caption: " + s.captions.li + "\n";
+    });
+    text += "\n";
+  }
+
+  if (approved.length > 0) {
+    text += "APPROVED POSTS\n" + "—".repeat(40) + "\n";
+    approved.forEach(p => {
+      const s = state[p.id];
+      text += "\n" + p.date + " — " + p.pillar + "\n";
+      if (s.captions.ig) text += "IG: " + s.captions.ig + "\n";
+      if (s.captions.fb) text += "FB: " + s.captions.fb + "\n";
+      if (s.captions.li) text += "LI: " + s.captions.li + "\n";
+    });
+  }
+
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "MI_Properties_Review_Summary.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+render();
+</script>
+</body>
+</html>
