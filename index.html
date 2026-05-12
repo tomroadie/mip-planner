@@ -881,7 +881,7 @@ function switchPage(id) {
   const tabs = ['dashboard','builder','schedule','review','settings'];
   const idx = tabs.indexOf(id);
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
-  if (id === 'builder' && !editingId) resetBuilder();
+  if (id === 'builder' && !window._loadingEdit) resetBuilder();
 }
 
 function toggleClientMode() {
@@ -1116,7 +1116,9 @@ function editPost(id) {
   switchImgTab(post.useCanva ? 'canva' : 'upload');
   updatePreview();
   updateChecklist();
+  window._loadingEdit = true;
   switchPage('builder');
+  window._loadingEdit = false;
 }
 
 function getBuilderPost() {
