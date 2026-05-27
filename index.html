@@ -100,6 +100,7 @@ nav{background:var(--brand);display:flex;align-items:center;padding:0 28px;heigh
 .sc-approved{background:var(--green-light);color:var(--green);}
 .sc-changes{background:var(--red-light);color:var(--red);}
 .sc-live{background:var(--brand);color:#fff;}
+.sc-archived{background:#e8e4df;color:#888;text-decoration:line-through;}
 .post-actions{display:flex;gap:4px;flex-shrink:0;}
 .icon-btn{width:30px;height:30px;border:0.5px solid var(--border);border-radius:7px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:15px;transition:all .15s;}
 .icon-btn:hover{background:var(--surface);color:var(--text);border-color:var(--border-med);}
@@ -294,6 +295,7 @@ hr{border:none;border-top:0.5px solid var(--border);margin:20px 0;}
       <option value="scheduled">Scheduled</option>
       <option value="approved">Approved</option>
       <option value="changes">Needs changes</option>
+      <option value="archived">Archived</option>
     </select>
     <select onchange="renderDashList()" id="dash-filter-pillar">
       <option value="all">All pillars</option>
@@ -302,6 +304,7 @@ hr{border:none;border-top:0.5px solid var(--border);margin:20px 0;}
       <option value="Tips">Tips</option>
       <option value="Social proof">Social proof</option>
     </select>
+    <button class="btn btn-secondary btn-sm" id="dash-archive-toggle" onclick="toggleShowArchived('dash')" style="margin-left:auto;">Show archived</button>
   </div>
   <div id="dash-post-list" class="post-list"></div>
 </div>
@@ -487,7 +490,9 @@ hr{border:none;border-top:0.5px solid var(--border);margin:20px 0;}
       <option value="scheduled">Scheduled</option>
       <option value="approved">Approved</option>
       <option value="changes">Needs changes</option>
+      <option value="archived">Archived</option>
     </select>
+    <button class="btn btn-secondary btn-sm" id="sched-archive-toggle" onclick="toggleShowArchived('sched')" style="margin-left:auto;">Show archived</button>
   </div>
   <div id="schedule-list" class="post-list"></div>
 </div>
@@ -845,6 +850,7 @@ async function init() {
   }
 
   subscribeRealtime();
+  await autoArchivePastPosts();
   renderAll();
   document.getElementById('loading-overlay').style.display = 'none';
   showToast('Connected — ' + posts.length + ' posts loaded');
@@ -920,13 +926,14 @@ function applyClientMode() {
 
 // ── STATS ──
 function updateStats() {
-  const total = posts.length;
-  const approved = posts.filter(p => p.reviewStatus === 'approved').length;
-  const changes = posts.filter(p => p.reviewStatus === 'changes').length;
-  const pending = posts.filter(p => p.reviewStatus === 'pending').length;
+  const active = posts.filter(p => p.status !== 'archived');
+  const total = active.length;
+  const approved = active.filter(p => p.reviewStatus === 'approved').length;
+  const changes = active.filter(p => p.reviewStatus === 'changes').length;
+  const pending = active.filter(p => p.reviewStatus === 'pending').length;
   const today = new Date();
   const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
-  const thisWeek = posts.filter(p => { const d = new Date(p.date); return d >= today && d <= weekEnd; }).length;
+  const thisWeek = active.filter(p => { const d = new Date(p.date); return d >= today && d <= weekEnd; }).length;
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-approved').textContent = approved;
   document.getElementById('stat-changes').textContent = changes;
@@ -975,10 +982,10 @@ function pillarClass(p) {
   return {Listing:'pb-listing',Lifestyle:'pb-lifestyle',Tips:'pb-tips','Social proof':'pb-social'}[p] || 'pb-listing';
 }
 function statusClass(s) {
-  return {draft:'sc-draft',scheduled:'sc-scheduled',approved:'sc-approved',changes:'sc-changes',live:'sc-live'}[s] || 'sc-draft';
+  return {draft:'sc-draft',scheduled:'sc-scheduled',approved:'sc-approved',changes:'sc-changes',live:'sc-live',archived:'sc-archived'}[s] || 'sc-draft';
 }
 function statusLabel(s) {
-  return {draft:'Draft',scheduled:'Scheduled',approved:'Approved',changes:'Needs changes',live:'Live'}[s] || s;
+  return {draft:'Draft',scheduled:'Scheduled',approved:'Approved',changes:'Needs changes',live:'Live',archived:'Archived'}[s] || s;
 }
 
 function thumbHTML(post) {
@@ -1014,6 +1021,7 @@ function postRowHTML(post, extraActions='') {
     <button class="icon-btn" title="Edit" onclick="editPost('${post.id}')">✏️</button>
     <button class="icon-btn" title="Duplicate" onclick="duplicatePost('${post.id}')">📋</button>
     <button class="icon-btn" title="Reschedule" onclick="openReschedule('${post.id}')">📅</button>
+    <button class="icon-btn" title="${post.status === 'archived' ? 'Unarchive' : 'Archive'}" onclick="toggleArchive('${post.id}')">${post.status === 'archived' ? '📤' : '📦'}</button>
     ${extraActions}
     <button class="icon-btn danger" title="Delete" onclick="openDelete('${post.id}')">🗑️</button>
   </div>
@@ -1030,8 +1038,10 @@ function formatDate(d) {
 function renderDashList() {
   const statusF = document.getElementById('dash-filter-status').value;
   const pillarF = document.getElementById('dash-filter-pillar').value;
+  const showArchived = window._showArchived_dash || false;
   const sorted = [...posts].sort((a,b)=>a.date.localeCompare(b.date));
   const filtered = sorted.filter(p => {
+    if (!showArchived && p.status === 'archived' && statusF !== 'archived') return false;
     if (statusF !== 'all' && p.status !== statusF) return false;
     if (pillarF !== 'all' && p.pillar !== pillarF) return false;
     return true;
@@ -1046,8 +1056,10 @@ function renderSchedule() {
   const monthF = document.getElementById('sched-filter-month').value;
   const pillarF = document.getElementById('sched-filter-pillar').value;
   const statusF = document.getElementById('sched-filter-status').value;
+  const showArchived = window._showArchived_sched || false;
   const sorted = [...posts].sort((a,b)=>a.date.localeCompare(b.date));
   const filtered = sorted.filter(p => {
+    if (!showArchived && p.status === 'archived' && statusF !== 'archived') return false;
     if (monthF !== 'all') { const d = new Date(p.date+'T12:00:00'); if(d.toLocaleString('en-GB',{month:'long'}) !== monthF) return false; }
     if (pillarF !== 'all' && p.pillar !== pillarF) return false;
     if (statusF !== 'all' && p.status !== statusF) return false;
@@ -1428,6 +1440,7 @@ function renderReview() {
   const monthF = document.getElementById('rev-filter-month').value;
   const statusF = document.getElementById('rev-filter-status').value;
   const sorted = [...posts].sort((a,b)=>a.date.localeCompare(b.date))
+    .filter(p => p.status !== 'archived')  // never show archived in client review
     .filter(p => p.status === 'scheduled' || p.status === 'approved' || p.status === 'changes' || p.reviewStatus !== 'pending');
 
   const filtered = sorted.filter(p => {
@@ -1580,7 +1593,45 @@ async function submitReview() {
   }
 }
 
-// ── DELETE / RESCHEDULE ──
+// ── ARCHIVE ──
+async function toggleArchive(id) {
+  const post = posts.find(p=>p.id===id); if (!post) return;
+  const wasArchived = post.status === 'archived';
+  post.status = wasArchived ? 'scheduled' : 'archived';
+  await dbUpsert(post);
+  renderAll();
+  showToast(wasArchived ? 'Post unarchived' : 'Post archived');
+}
+
+function toggleShowArchived(view) {
+  const key = '_showArchived_' + view;
+  window[key] = !window[key];
+  const btn = document.getElementById(view + '-archive-toggle');
+  if (btn) {
+    btn.textContent = window[key] ? 'Hide archived' : 'Show archived';
+    btn.className = 'btn btn-sm ' + (window[key] ? 'btn-pink' : 'btn-secondary');
+  }
+  if (view === 'dash') renderDashList();
+  else renderSchedule();
+}
+
+// Auto-archive posts whose date has passed
+async function autoArchivePastPosts() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const toArchive = posts.filter(p => {
+    if (p.status === 'archived' || p.status === 'draft') return false;
+    if (!p.date) return false;
+    const postDate = new Date(p.date + 'T12:00:00');
+    return postDate < today;
+  });
+  if (!toArchive.length) return;
+  for (const post of toArchive) {
+    post.status = 'archived';
+    await dbUpsert(post);
+  }
+  if (toArchive.length) showToast(`${toArchive.length} past post${toArchive.length>1?'s':''} auto-archived`);
+}
 function openDelete(id) { deleteTargetId = id; document.getElementById('delete-modal').classList.add('open'); }
 async function confirmDelete() {
   posts = posts.filter(p=>p.id!==deleteTargetId);
